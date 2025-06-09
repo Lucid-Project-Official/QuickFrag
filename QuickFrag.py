@@ -12,7 +12,7 @@ CLE_DISCORD = os.getenv("DISCORD_TOKEN")
 countdown_flags = {}
 
 async def update_embed(interaction, match_id, is_modifiabled):
-    connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-full',sslrootcert='system')
+    connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-ca',sslrootcert='/home/ubuntu/certs/ca.pem')
     cursor = connection.cursor()
 
     CreatorName = ""
@@ -112,7 +112,7 @@ class QuitButton(discord.ui.Button):
         if match_id not in countdown_flags:
             countdown_flags[match_id] = {"done": False}
         
-        connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-full',sslrootcert='system')
+        connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-ca',sslrootcert='/home/ubuntu/certs/ca.pem')
         cursor = connection.cursor()
         
         self.message = interaction.message
@@ -147,7 +147,7 @@ class QuitButton(discord.ui.Button):
         
         channel = interaction.message.channel
 
-        connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-full',sslrootcert='system')
+        connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-ca',sslrootcert='/home/ubuntu/certs/ca.pem')
         cursor = connection.cursor()
 
         result = None
@@ -236,7 +236,7 @@ class VocalChannelSelect(discord.ui.Select):
         channel_id = int(self.values[0])
         channel = interaction.guild.get_channel(channel_id)
         
-        connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-full',sslrootcert='system')
+        connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-ca',sslrootcert='/home/ubuntu/certs/ca.pem')
         cursor = connection.cursor()
 
         result = None
@@ -294,7 +294,7 @@ class CléModal(discord.ui.Modal, title="Enregistrer votre bot QuickFrag"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-full',sslrootcert='system')
+        connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-ca',sslrootcert='/home/ubuntu/certs/ca.pem')
         cursor = connection.cursor()
         result = None
 
@@ -362,7 +362,7 @@ async def on_interaction(interaction: discord.Interaction):
             user_joind_guild = interaction.guild.id
             #await interaction.response.defer()
             
-            connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-full',sslrootcert='system')
+            connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-ca',sslrootcert='/home/ubuntu/certs/ca.pem')
             cursor = connection.cursor()
             match_created = False
             result = None
@@ -498,7 +498,7 @@ async def on_interaction(interaction: discord.Interaction):
                     f"🎧 Vous devez vous connecter sur le channel vocal : <#{channel.id}>", ephemeral=True
                 )
             else :
-                connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-full',sslrootcert='system')
+                connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-ca',sslrootcert='/home/ubuntu/certs/ca.pem')
                 cursor = connection.cursor()
                 result = None
                 with connection.cursor() as cur:
@@ -646,7 +646,7 @@ async def on_interaction(interaction: discord.Interaction):
                 )
             else : 
 
-                connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-full',sslrootcert='system')
+                connection = psycopg2.connect(dsn=CLE_DE_CONNECTION,sslmode='verify-ca',sslrootcert='/home/ubuntu/certs/ca.pem')
                 cursor = connection.cursor()
 
                 result = None
