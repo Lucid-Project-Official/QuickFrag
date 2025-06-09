@@ -7,8 +7,6 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-#CLE_DE_CONNECTION = "postgres://avnadmin:AG5atjsOPUcdH1X364mT@postgresql-e571afbf-oc67a9097.database.cloud.ovh.net:20184/QuickFrag?sslmode=require"
-#DISCORD_TOKEN = "MTM1ODgyODI5ODIzODQzMTQ1Mw.Gk5S_p._XH6BOLX4EHFy8gQriyxI-sXo-3fwEvxkqjuMY"
 CLE_DE_CONNECTION = os.getenv("OVHCLOUD_TOKEN")
 CLE_DISCORD = os.getenv("DISCORD_TOKEN")
 
