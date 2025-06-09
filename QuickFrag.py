@@ -1,78 +1,6 @@
 import discord, psycopg2, asyncio, re, json, subprocess, random, os
 from discord.ext import commands
 from discord import app_commands
-from psycopg2 import pool
-from psycopg2.extras import RealDictCursor
-import time
-
-class DatabaseManager:
-    _instance = None
-    _pool = None
-    
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(DatabaseManager, cls).__new__(cls)
-        return cls._instance
-    
-    def __init__(self):
-        if self._pool is None:
-            self._initialize_pool()
-    
-    def _initialize_pool(self):
-        try:
-            self._pool = pool.ThreadedConnectionPool(
-                minconn=1,
-                maxconn=10,
-                dsn=os.getenv("OVHCLOUD_TOKEN"),
-                cursor_factory=RealDictCursor
-            )
-        except Exception as e:
-            print(f"Erreur lors de l'initialisation du pool de connexion: {e}")
-            raise
-    
-    def get_connection(self):
-        max_retries = 3
-        retry_delay = 1
-        
-        for attempt in range(max_retries):
-            try:
-                return self._pool.getconn()
-            except Exception as e:
-                if attempt == max_retries - 1:
-                    print(f"Échec de la connexion après {max_retries} tentatives: {e}")
-                    raise
-                print(f"Tentative de connexion {attempt + 1} échouée: {e}")
-                time.sleep(retry_delay)
-                self._initialize_pool()
-    
-    def release_connection(self, conn):
-        try:
-            self._pool.putconn(conn)
-        except Exception as e:
-            print(f"Erreur lors de la libération de la connexion: {e}")
-    
-    def execute_query(self, query, params=None):
-        conn = None
-        try:
-            conn = self.get_connection()
-            with conn.cursor() as cur:
-                cur.execute(query, params or ())
-                if query.strip().upper().startswith(('SELECT', 'RETURNING')):
-                    return cur.fetchall()
-                conn.commit()
-                return None
-        except Exception as e:
-            if conn:
-                conn.rollback()
-            print(f"Erreur lors de l'exécution de la requête: {e}")
-            raise
-        finally:
-            if conn:
-                self.release_connection(conn)
-
-# Initialisation du gestionnaire de base de données
-db_manager = DatabaseManager()
-
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -80,35 +8,52 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 CLE_DISCORD = os.getenv("DISCORD_TOKEN")
 
+BDD_USER = os.getenv("OVH_USER")
+BDD_PASSW = os.getenv("OVH_PASSW")
+BDD_HOST = os.getenv("OVH_HOST")
+BDD_PORT = os.getenv("OVH_PORT")
+BDD_DATABASE = os.getenv("OVH_DATABASE")
+
+
 countdown_flags = {}
 
 async def update_embed(interaction, match_id, is_modifiabled):
-    try:
-        result = db_manager.execute_query("""
+    connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+    cursor = connection.cursor()
+
+    CreatorName = ""
+    
+    with connection.cursor() as cur:
+        cur.execute("""
             SELECT match_CreatorName FROM Matchs
             WHERE match_ID = %s
-        """, (match_id,))
-        
-        CreatorName = result[0]['match_creatorsname'] if result else ""
-        
-        embed = discord.Embed(
-            title="🎯 LA GAME VA BIENTOT COMMENCER !",
-            description=f"**{CreatorName}** est le créateur de la partie !\nEn attente des autres joueurs...",
-            color=discord.Color.blurple()
-        )
+        """,(match_id,))
 
-        embed.add_field(name="EQUIPE BLEU :", value="🔹", inline=True)
-        embed.add_field(name="EQUIPE ROUGE :", value="🔸", inline=True)
+        CreatorName = cur.fetchone()[0]
+    
+    embed = discord.Embed(
+        title="🎯 LA GAME VA BIENTOT COMMENCER !",
+        description=f"**{CreatorName}** est le créateur de la partie !\nEn attente des autres joueurs...",
+        color=discord.Color.blurple()
+    )
 
-        embed.set_thumbnail(url="https://seek-team-prod.s3.fr-par.scw.cloud/users/67c758968e61a685175513.jpg")
+    embed.add_field(name="EQUIPE BLEU :", value="🔹", inline=True)
+    embed.add_field(name="EQUIPE ROUGE :", value="🔸", inline=True)
 
-        quit_button = QuitButton()
-        view = GameFreeActionButtons(quit_button)
+    embed.set_thumbnail(url="https://seek-team-prod.s3.fr-par.scw.cloud/users/67c758968e61a685175513.jpg")  # Ton URL
 
-        if is_modifiabled:
-            asyncio.create_task(quit_button.start_countdown(interaction, match_id, is_modifiabled))
+    # Vue et bouton "Quitter"
+    quit_button = QuitButton()
+    view = GameFreeActionButtons(quit_button)
 
-        result = db_manager.execute_query("""
+    if is_modifiabled :
+        asyncio.create_task(quit_button.start_countdown(interaction, match_id, is_modifiabled))
+
+    # Envoie l'embed initial
+    #await interaction.message.edit(embed=embed, view=view)
+    
+    with connection.cursor() as cur:
+        cur.execute("""
             SELECT 
                 match_PlayerName_1, match_PlayerName_2, match_PlayerName_3, 
                 match_PlayerName_4, match_PlayerName_5, match_PlayerName_6,
@@ -116,18 +61,22 @@ async def update_embed(interaction, match_id, is_modifiabled):
                 match_PlayerName_10
             FROM Matchs WHERE match_ID = %s AND match_Status = 1
         """, (match_id,))
+        result = cur.fetchone()
 
-        if result:
-            players = [name for name in result[0].values() if name]
-            blue_team = players[:5]
-            red_team = players[5:]
+    if result:
+        players = [name for name in result if name]  # filtre les None
 
-            embed.set_field_at(0, name="EQUIPE BLEU :", value="🔹 " + '\n🔹 '.join(blue_team) if blue_team else "🔹", inline=True)
-            embed.set_field_at(1, name="EQUIPE ROUGE :", value="🔸 " + '\n🔸 '.join(red_team) if red_team else "🔸", inline=True)
+        # Exemple simple : 5 joueurs par équipe
+        blue_team = players[:5]
+        red_team = players[5:]
 
-            await interaction.message.edit(embed=embed, view=view)
+        embed.set_field_at(0, name="EQUIPE BLEU :", value="🔹 " + '\n🔹 '.join(blue_team) if blue_team else "🔹", inline=True)
+        embed.set_field_at(1, name="EQUIPE ROUGE :", value="🔸 " + '\n🔸 '.join(red_team) if red_team else "🔸", inline=True)
 
-            result = db_manager.execute_query("""
+        await interaction.message.edit(embed=embed, view=view)
+
+        with connection.cursor() as cur:
+            cur.execute("""
                 SELECT 
                     Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, 
                     Linked_Embbeded_MSG_4, Linked_Embbeded_MSG_5, Linked_Embbeded_MSG_6,
@@ -135,15 +84,27 @@ async def update_embed(interaction, match_id, is_modifiabled):
                     Linked_Embbeded_MSG_10
                 FROM Matchs WHERE match_ID = %s AND match_Status = 1
             """, (match_id,))
+            result = cur.fetchone()
 
-            result2 = db_manager.execute_query("""
+        with connection.cursor() as cur:
+            cur.execute("""
                 SELECT 
                     hosted_channelID, hosted_messageID
                 FROM Matchs WHERE match_ID = %s AND match_Status = 1
             """, (match_id,))
-    except Exception as e:
-        print(f"Erreur lors de la mise à jour de l'embed: {e}")
-        await interaction.followup.send("Une erreur est survenue lors de la mise à jour de l'embed.", ephemeral=True)
+            result2 = cur.fetchone()
+            
+        if result:
+            data_listed = [data for data in result if data]  # filtre les None
+            for data_dict in data_listed :
+                dict_data = json.loads(data_dict)
+                channel = bot.get_channel(int(dict_data['channel_id']))
+                message = await channel.fetch_message(int(dict_data['message_id']))
+                if (str(dict_data['channel_id']) == str(result2[0])) and (str(dict_data['message_id']) == str(result2[1])) and (len(players) == 10) :
+                    enabled_view = StartGameViewButtons(quit_button)
+                    await message.edit(embed=embed, view = enabled_view)
+                else:
+                    await message.edit(embed=embed)
 
 class QuitButton(discord.ui.Button):
     def __init__(self, countdown: int = 150):
@@ -157,6 +118,9 @@ class QuitButton(discord.ui.Button):
         if match_id not in countdown_flags:
             countdown_flags[match_id] = {"done": False}
         
+        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+        cursor = connection.cursor()
+        
         self.message = interaction.message
         while self.countdown > 0:
             if countdown_flags[match_id]["done"]:
@@ -167,63 +131,74 @@ class QuitButton(discord.ui.Button):
         if self.countdown <= 0:
             countdown_flags[match_id]["done"] = True
             
-        try:
-            db_manager.execute_query("""
+        with connection.cursor() as cur:
+            cur.execute("""
                 UPDATE Matchs
                 SET match_Status = 3
                 WHERE match_ID = %s
             """, (match_id,))
-            
-            cancel_embed = discord.Embed(
-                title="⏱️ Partie annulée",
-                description="Aucun joueur n'a rejoint à temps.",
-                color=discord.Color.red()
-            )
-            try:
-                await self.message.edit(embed=cancel_embed, view=None)  
-            except (discord.NotFound, AttributeError):
-                print("Impossible d'annuler : le message a été supprimé.")
+        connection.commit()
+        
+        cancel_embed = discord.Embed(
+            title="⏱️ Partie annulée",
+            description="Aucun joueur n'a rejoint à temps.",
+            color=discord.Color.red()
+        )
+        try:
+            await self.message.edit(embed=cancel_embed, view=None)  
+        except (discord.NotFound, AttributeError):
+            print("Impossible d’annuler : le message a été supprimé.")
 
-            await asyncio.sleep(5)
-            
-            channel = interaction.message.channel
+        await asyncio.sleep(5)
+        
+        channel = interaction.message.channel
 
-            result = db_manager.execute_query("""
+        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+        cursor = connection.cursor()
+
+        result = None
+
+        with connection.cursor() as cur:
+            cur.execute("""
                 SELECT type_licence FROM Licence
                 WHERE Linked_discord_serverID = %s AND duree_validite_heure > 0
             """, (str(interaction.guild.id),))
-            
-            if result:
-                embed = discord.Embed(
-                    title=f'Offre **{result[0]["type_licence"]}** active, lancer une partie dès maintenant !',
-                    description=f'Assurez-vous que tout les joueurs qui participeront sont dans le channel vocal : <#{channel.id}>',
-                    color=discord.Color.green()
-                )
-                
-                view = StartFreeGameButton()
-                if result[0]["type_licence"] == "FREE":
-                    view = StartFreeGameButton()
-                elif result[0]["type_licence"] == "BASIC":
-                    view = StartFreeGameButton()
-                elif result[0]["type_licence"] == "EXPRESS":
-                    view = StartGameButton()
-                elif result[0]["type_licence"] == "PREMIUM":
-                    view = StartGameButton()
-                
-                await channel.purge(limit=None)
-                
-                if is_modifiabled: 
-                    if match_id in countdown_flags:
-                        del countdown_flags[match_id]
-                
-                await channel.send(embed=embed, view=view)
-        except Exception as e:
-            print(f"Erreur lors du countdown: {e}")
-            await interaction.followup.send("Une erreur est survenue lors du countdown.", ephemeral=True)
 
+            result = cur.fetchone()
+            
+        if result :
+        
+            embed = discord.Embed(
+                title=f'Offre **{result[0]}** active, lancer une partie dès maintenant !',
+                description = f'Assurez-vous que tout les joueurs qui participeront sont dans le channel vocal : <#{channel.id}>',
+                color=discord.Color.green()
+            )
+        view = StartFreeGameButton()
+        if result[0] == "FREE" :
+            view = StartFreeGameButton()
+        if result[0] == "BASIC" :
+            view = StartFreeGameButton()
+        if result[0] == "EXPRESS" :
+            view = StartGameButton()
+        if result[0] == "PREMIUM" :
+            view = StartGameButton()
+            
+        view = StartGameButton()
+        
+        await channel.purge(limit=None)
+        
+        if is_modifiabled : 
+            if match_id in countdown_flags:
+                del countdown_flags[match_id]
+        
+        await channel.send(embed=embed, view=view)
+
+        
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer()
         user_id = interaction.user.id
+
+        
 
 class StartGameViewButtons(discord.ui.View):
     def __init__(self, quit_button: QuitButton):
@@ -267,7 +242,7 @@ class VocalChannelSelect(discord.ui.Select):
         channel_id = int(self.values[0])
         channel = interaction.guild.get_channel(channel_id)
         
-        connection = psycopg2.connect(CLE_DE_CONNECTION)
+        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
         cursor = connection.cursor()
 
         result = None
@@ -325,7 +300,7 @@ class CléModal(discord.ui.Modal, title="Enregistrer votre bot QuickFrag"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        connection = psycopg2.connect(CLE_DE_CONNECTION)
+        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
         cursor = connection.cursor()
         result = None
 
@@ -393,7 +368,7 @@ async def on_interaction(interaction: discord.Interaction):
             user_joind_guild = interaction.guild.id
             #await interaction.response.defer()
             
-            connection = psycopg2.connect(CLE_DE_CONNECTION)
+            connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
             cursor = connection.cursor()
             match_created = False
             result = None
@@ -529,7 +504,7 @@ async def on_interaction(interaction: discord.Interaction):
                     f"🎧 Vous devez vous connecter sur le channel vocal : <#{channel.id}>", ephemeral=True
                 )
             else :
-                connection = psycopg2.connect(CLE_DE_CONNECTION)
+                connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
                 cursor = connection.cursor()
                 result = None
                 with connection.cursor() as cur:
@@ -677,7 +652,7 @@ async def on_interaction(interaction: discord.Interaction):
                 )
             else : 
 
-                connection = psycopg2.connect(CLE_DE_CONNECTION)
+                connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
                 cursor = connection.cursor()
 
                 result = None
@@ -703,7 +678,7 @@ async def on_interaction(interaction: discord.Interaction):
                         filled_slots = sum(1 for slot in player_slots if slot is not None)
                         empty_slots = 5 - filled_slots
 
-                        # Si la partie est complète, on ignore (0 signifie pas d'intérêt ici)
+                        # Si la partie est complète, on ignore (0 signifie pas d’intérêt ici)
                         if empty_slots == 0:
                             list_best_match_red.append(0)
                             continue
@@ -721,7 +696,7 @@ async def on_interaction(interaction: discord.Interaction):
                         filled_slots = sum(1 for slot in player_slots if slot is not None)
                         empty_slots = 5 - filled_slots
 
-                        # Si la partie est complète, on ignore (0 signifie pas d'intérêt ici)
+                        # Si la partie est complète, on ignore (0 signifie pas d’intérêt ici)
                         if empty_slots == 0:
                             list_best_match_blue.append(0)
                             continue
@@ -776,7 +751,7 @@ async def on_interaction(interaction: discord.Interaction):
                     set_clause = ", ".join(set_parts)
 
                     # Ajout de la clause WHERE avec l'ID du match
-                    match_id = best_match_row[1]  # À adapter si match_ID n'est pas à l'index 0
+                    match_id = best_match_row[1]  # À adapter si match_ID n'est pas à l’index 0
                     values.append(match_id)
 
                     # Requête SQL finale
