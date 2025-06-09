@@ -10,6 +10,9 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 CLE_DE_CONNECTION = os.getenv("OVHCLOUD_TOKEN")
 CLE_DISCORD = os.getenv("DISCORD_TOKEN")
 
+print("Clée de connection à la base de donnée : "+ str(CLE_DE_CONNECTION))
+print("Clée de connection au bot discord : "+ str(CLE_DISCORD))
+
 countdown_flags = {}
 
 async def update_embed(interaction, match_id, is_modifiabled):
