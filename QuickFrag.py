@@ -1,4 +1,4 @@
-import discord, psycopg2, asyncio, re, json, subprocess, random
+import discord, psycopg2, asyncio, re, json, subprocess, random, os
 from discord.ext import commands
 from discord import app_commands
 
@@ -7,7 +7,10 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-CLE_DE_CONNECTION = "postgres://avnadmin:AG5atjsOPUcdH1X364mT@postgresql-e571afbf-oc67a9097.database.cloud.ovh.net:20184/QuickFrag?sslmode=require"
+#CLE_DE_CONNECTION = "postgres://avnadmin:AG5atjsOPUcdH1X364mT@postgresql-e571afbf-oc67a9097.database.cloud.ovh.net:20184/QuickFrag?sslmode=require"
+#DISCORD_TOKEN = "MTM1ODgyODI5ODIzODQzMTQ1Mw.Gk5S_p._XH6BOLX4EHFy8gQriyxI-sXo-3fwEvxkqjuMY"
+CLE_DE_CONNECTION = os.getenv("OVHCLOUD_TOKEN")
+CLE_DISCORD = os.getenv("DISCORD_TOKEN")
 
 countdown_flags = {}
 
@@ -907,4 +910,4 @@ async def on_interaction(interaction: discord.Interaction):
                 await update_embed(interaction, match_id=match_id, is_modifiabled=is_modifiabled)
                 
 
-bot.run("MTM1ODgyODI5ODIzODQzMTQ1Mw.Gk5S_p._XH6BOLX4EHFy8gQriyxI-sXo-3fwEvxkqjuMY")
+bot.run(CLE_DISCORD)
