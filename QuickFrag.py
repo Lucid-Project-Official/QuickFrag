@@ -13,12 +13,14 @@ BDD_PASSW = os.getenv("OVH_PASSW")
 BDD_HOST = os.getenv("OVH_HOST")
 BDD_PORT = os.getenv("OVH_PORT")
 BDD_DATABASE = os.getenv("OVH_DATABASE")
+BDD_SSLMODE = os.getenv("OVH_SSL")
+BDD_SSLPATH = os.getenv("OVH_SSLPATH")
 
 
 countdown_flags = {}
 
 async def update_embed(interaction, match_id, is_modifiabled):
-    connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+    connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
     cursor = connection.cursor()
 
     CreatorName = ""
@@ -118,7 +120,7 @@ class QuitButton(discord.ui.Button):
         if match_id not in countdown_flags:
             countdown_flags[match_id] = {"done": False}
         
-        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
         cursor = connection.cursor()
         
         self.message = interaction.message
@@ -153,7 +155,7 @@ class QuitButton(discord.ui.Button):
         
         channel = interaction.message.channel
 
-        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
         cursor = connection.cursor()
 
         result = None
@@ -242,7 +244,7 @@ class VocalChannelSelect(discord.ui.Select):
         channel_id = int(self.values[0])
         channel = interaction.guild.get_channel(channel_id)
         
-        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
         cursor = connection.cursor()
 
         result = None
@@ -300,7 +302,7 @@ class CléModal(discord.ui.Modal, title="Enregistrer votre bot QuickFrag"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
         cursor = connection.cursor()
         result = None
 
@@ -368,7 +370,7 @@ async def on_interaction(interaction: discord.Interaction):
             user_joind_guild = interaction.guild.id
             #await interaction.response.defer()
             
-            connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+            connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
             cursor = connection.cursor()
             match_created = False
             result = None
@@ -504,7 +506,7 @@ async def on_interaction(interaction: discord.Interaction):
                     f"🎧 Vous devez vous connecter sur le channel vocal : <#{channel.id}>", ephemeral=True
                 )
             else :
-                connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+                connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
                 cursor = connection.cursor()
                 result = None
                 with connection.cursor() as cur:
@@ -652,7 +654,7 @@ async def on_interaction(interaction: discord.Interaction):
                 )
             else : 
 
-                connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE)
+                connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
                 cursor = connection.cursor()
 
                 result = None
