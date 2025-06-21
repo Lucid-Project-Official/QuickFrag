@@ -19,6 +19,91 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 countdown_flags = {}
 
+async def update_all_linked_messages_with_starting_server(match_id, countdown_seconds=30):
+    """Met à jour tous les messages liés avec le bouton de démarrage du serveur"""
+    # Récupération des messages liés
+    linked_msgs_response = supabase.table("Matchs").select(
+        "Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, "
+        "Linked_Embbeded_MSG_4, Linked_Embbeded_MSG_5, Linked_Embbeded_MSG_6, "
+        "Linked_Embbeded_MSG_7, Linked_Embbeded_MSG_8, Linked_Embbeded_MSG_9, "
+        "Linked_Embbeded_MSG_10"
+    ).eq("match_ID", match_id).eq("match_Status", 2).execute()
+    
+    result = linked_msgs_response.data[0] if linked_msgs_response.data else None
+    
+    if result:
+        data_listed = [data for data in result.values() if data]  # filtre les None
+        for data_dict in data_listed:
+            try:
+                dict_data = json.loads(data_dict)
+                channel = bot.get_channel(int(dict_data['channel_id']))
+                if channel:
+                    message = await channel.fetch_message(int(dict_data['message_id']))
+                    if message:
+                        # Récupérer l'embed existant
+                        current_embed = message.embeds[0] if message.embeds else None
+                        
+                        # Créer la vue avec le bouton de démarrage
+                        quit_button = QuitButton()
+                        starting_view = StartingServerViewButtons(quit_button, countdown_seconds)
+                        
+                        await message.edit(embed=current_embed, view=starting_view)
+            except (json.JSONDecodeError, discord.NotFound, discord.Forbidden) as e:
+                print(f"Erreur lors de la mise à jour du message: {e}")
+                continue
+
+async def update_server_countdown_real_time(match_id, ssh_command, start_time):
+    """Met à jour le compte à rebours en temps réel pendant l'exécution de la commande SSH"""
+    max_wait_time = 60
+    
+    # Démarrer la commande SSH de manière asynchrone
+    process = await asyncio.create_subprocess_exec(
+        *ssh_command,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    
+    # Créer une tâche pour surveiller le processus
+    async def monitor_process():
+        stdout, stderr = await process.communicate()
+        return process.returncode, stdout.decode(), stderr.decode()
+    
+    # Démarrer la surveillance du processus
+    process_task = asyncio.create_task(monitor_process())
+    
+    # Boucle de mise à jour du countdown
+    while not process_task.done():
+        current_time = asyncio.get_event_loop().time()
+        elapsed_time = int(current_time - start_time)
+        remaining_time = max(0, max_wait_time - elapsed_time)
+        
+        # Mettre à jour tous les messages avec le temps restant
+        await update_all_linked_messages_with_starting_server(match_id, remaining_time)
+        
+        # Attendre 1 seconde avant la prochaine mise à jour
+        try:
+            await asyncio.wait_for(asyncio.sleep(1), timeout=1)
+        except asyncio.TimeoutError:
+            pass
+        
+        # Arrêter si on dépasse le temps maximum
+        if elapsed_time >= max_wait_time:
+            try:
+                process.terminate()
+                await asyncio.wait_for(process.wait(), timeout=5)
+            except:
+                try:
+                    process.kill()
+                except:
+                    pass
+            break
+    
+    # Récupérer les résultats
+    try:
+        return await process_task
+    except:
+        return -1, "", "Processus interrompu"
+
 async def update_embed(interaction, match_id, is_modifiabled):
     # Récupération du nom du créateur
     response = supabase.table("Matchs").select("match_CreatorName").eq("match_ID", match_id).execute()
@@ -184,6 +269,13 @@ class StartGameViewButtons(discord.ui.View):
         super().__init__(timeout=None)
         self.add_item(discord.ui.Button(label="Rejoindre la partie", style=discord.ButtonStyle.blurple, custom_id="join_game"))
         self.add_item(discord.ui.Button(label="Lancer la partie", style=discord.ButtonStyle.green, disabled=False, custom_id="start_game"))
+        self.add_item(quit_button)
+
+class StartingServerViewButtons(discord.ui.View):
+    def __init__(self, quit_button: QuitButton, countdown_seconds: int = 30):
+        super().__init__(timeout=None)
+        self.add_item(discord.ui.Button(label="Rejoindre la partie", style=discord.ButtonStyle.blurple, custom_id="join_game"))
+        self.add_item(discord.ui.Button(label=f"Démarrage du serveur ({countdown_seconds}s)", style=discord.ButtonStyle.green, disabled=True, custom_id="start_game"))
         self.add_item(quit_button)
 
 class GameFreeActionButtons(discord.ui.View):
@@ -400,18 +492,29 @@ async def on_interaction(interaction: discord.Interaction):
                     sshcommand = "sudo ./cs2_server_27016 " +map_choiced + " competitive restart"
                     ssh_key = "/root/.ssh/id_rsa_cs2"
 
-                    print(sshadress)
-
                     ssh_command= ["ssh","-i",ssh_key,"-o","StrictHostKeyChecking=no",sshadress,sshcommand]
 
-                    resultatssh = subprocess.run(ssh_command, capture_output=True, text=True)
-
-                    print(resultatssh.stdout)
-                    print(resultatssh.stderr)
-
-                    message = str(sshadress) + "\n" + str(resultatssh.stderr) + "\n" + str(resultatssh.stdout)
+                    # Démarrage du compte à rebours et de la commande SSH
+                    start_time = asyncio.get_event_loop().time()
                     
-                    await interaction.response.send_message("Vous avez lancé la partie. " + message, ephemeral=True)
+                    # Mise à jour initiale de tous les messages liés avec le bouton de démarrage
+                    await update_all_linked_messages_with_starting_server(PlayedMatchID, 60)
+                    
+                    # Exécution de la commande SSH avec mise à jour en temps réel
+                    returncode, stdout, stderr = await update_server_countdown_real_time(PlayedMatchID, ssh_command, start_time)
+                    
+                    # Vérifier si le serveur a démarré avec succès
+                    server_started = "*  The server has been started!  *" in stdout
+                    
+                    end_time = asyncio.get_event_loop().time()
+                    elapsed_time = int(end_time - start_time)
+
+                    message = str(sshadress) + "\n" + str(stderr) + "\n" + str(stdout)
+                    
+                    if server_started:
+                        await interaction.response.send_message(f"✅ Serveur démarré avec succès en {elapsed_time}s ! " + message, ephemeral=True)
+                    else:
+                        await interaction.response.send_message(f"⚠️ Problème lors du démarrage du serveur (temps: {elapsed_time}s). " + message, ephemeral=True)
             await interaction.response.defer()
                 
 
