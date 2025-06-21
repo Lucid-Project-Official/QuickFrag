@@ -80,6 +80,39 @@ async def update_all_linked_messages_with_starting_server(match_id, countdown_se
                 print(f"Erreur lors de la mise à jour du message: {e}")
                 continue
 
+async def update_all_linked_messages_with_connect_button(match_id):
+    """Met à jour tous les messages liés avec le bouton Se connecter"""
+    # Récupération des messages liés
+    linked_msgs_response = supabase.table("Matchs").select(
+        "Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, "
+        "Linked_Embbeded_MSG_4, Linked_Embbeded_MSG_5, Linked_Embbeded_MSG_6, "
+        "Linked_Embbeded_MSG_7, Linked_Embbeded_MSG_8, Linked_Embbeded_MSG_9, "
+        "Linked_Embbeded_MSG_10"
+    ).eq("match_ID", match_id).eq("match_Status", 2).execute()
+    
+    result = linked_msgs_response.data[0] if linked_msgs_response.data else None
+    
+    if result:
+        data_listed = [data for data in result.values() if data]  # filtre les None
+        for data_dict in data_listed:
+            try:
+                dict_data = json.loads(data_dict)
+                channel = bot.get_channel(int(dict_data['channel_id']))
+                if channel:
+                    message = await channel.fetch_message(int(dict_data['message_id']))
+                    if message:
+                        # Récupérer l'embed existant
+                        current_embed = message.embeds[0] if message.embeds else None
+                        
+                        # Créer la vue avec le bouton Se connecter
+                        quit_button = QuitButton()
+                        connect_view = ConnectServerViewButtons(quit_button)
+                        
+                        await message.edit(embed=current_embed, view=connect_view)
+            except (json.JSONDecodeError, discord.NotFound, discord.Forbidden) as e:
+                print(f"Erreur lors de la mise à jour du message: {e}")
+                continue
+
 async def update_server_countdown_real_time(match_id, ssh_command, start_time):
     """Met à jour le compte à rebours en temps réel pendant l'exécution de la commande SSH"""
     max_wait_time = 60
@@ -306,6 +339,13 @@ class StartingServerViewButtons(discord.ui.View):
         self.add_item(discord.ui.Button(label=f"Démarrage du serveur ({countdown_seconds}s)", style=discord.ButtonStyle.green, disabled=True, custom_id="start_game"))
         self.add_item(quit_button)
 
+class ConnectServerViewButtons(discord.ui.View):
+    def __init__(self, quit_button: QuitButton):
+        super().__init__(timeout=None)
+        self.add_item(discord.ui.Button(label="Rejoindre la partie", style=discord.ButtonStyle.blurple, custom_id="join_game"))
+        self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, disabled=False, custom_id="connect_server"))
+        self.add_item(quit_button)
+
 class GameFreeActionButtons(discord.ui.View):
     def __init__(self, quit_button: QuitButton):
         super().__init__(timeout=None)
@@ -456,6 +496,8 @@ async def on_interaction(interaction: discord.Interaction):
             await interaction.response.defer()
         if interaction.data.get("custom_id") == "create_private_game":
             await interaction.response.defer()
+        if interaction.data.get("custom_id") == "connect_server":
+            await interaction.response.send_message("🎮 Connexion au serveur en cours...", ephemeral=True)
         if interaction.data.get("custom_id") == "start_game":
             list_mapName = ["de_ancient","de_anubis","de_dust2","de_inferno","de_mirage","de_nuke","de_overpass","de_train","de_vertigo"]
             channel = interaction.channel
@@ -537,17 +579,9 @@ async def on_interaction(interaction: discord.Interaction):
                     end_time = asyncio.get_event_loop().time()
                     elapsed_time = int(end_time - start_time)
 
-                    # Formater la sortie du serveur avec limitation de longueur
-                    formatted_output = format_server_output(sshadress, stderr, stdout)
-                    
-                    if server_started:
-                        success_msg = f"✅ Serveur démarré avec succès en {elapsed_time}s !\n\n{formatted_output}"
-                        success_msg = truncate_message_for_discord(success_msg)
-                        await interaction.response.send_message(success_msg, ephemeral=True)
-                    else:
-                        error_msg = f"⚠️ Problème lors du démarrage du serveur (temps: {elapsed_time}s).\n\n{formatted_output}"
-                        error_msg = truncate_message_for_discord(error_msg)
-                        await interaction.response.send_message(error_msg, ephemeral=True)
+                    # Mettre à jour tous les messages avec le bouton "Se connecter"
+                    await update_all_linked_messages_with_connect_button(PlayedMatchID)
+                    return
             await interaction.response.defer()
                 
 
