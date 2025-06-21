@@ -19,6 +19,34 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 countdown_flags = {}
 
+def truncate_message_for_discord(message: str, max_length: int = 2000) -> str:
+    """Tronque un message pour respecter les limites de Discord"""
+    if len(message) <= max_length:
+        return message
+    
+    # Laisser de la place pour "..."
+    truncated_length = max_length - 3
+    return message[:truncated_length] + "..."
+
+def format_server_output(sshadress: str, stderr: str, stdout: str, max_total_length: int = 1800) -> str:
+    """Formate la sortie du serveur en respectant les limites de longueur"""
+    base_message = f"Serveur: {sshadress}\n"
+    base_length = len(base_message)
+    
+    # Calculer l'espace disponible pour stderr et stdout
+    available_space = max_total_length - base_length - 20  # 20 pour les labels et sauts de ligne
+    
+    if available_space <= 0:
+        return base_message + "Sortie trop longue pour être affichée."
+    
+    # Diviser l'espace équitablement entre stderr et stdout
+    space_per_output = available_space // 2
+    
+    stderr_truncated = stderr[:space_per_output] + ("..." if len(stderr) > space_per_output else "")
+    stdout_truncated = stdout[:space_per_output] + ("..." if len(stdout) > space_per_output else "")
+    
+    return base_message + f"STDERR:\n{stderr_truncated}\n\nSTDOUT:\n{stdout_truncated}"
+
 async def update_all_linked_messages_with_starting_server(match_id, countdown_seconds=30):
     """Met à jour tous les messages liés avec le bouton de démarrage du serveur"""
     # Récupération des messages liés
@@ -509,12 +537,17 @@ async def on_interaction(interaction: discord.Interaction):
                     end_time = asyncio.get_event_loop().time()
                     elapsed_time = int(end_time - start_time)
 
-                    message = str(sshadress) + "\n" + str(stderr) + "\n" + str(stdout)
+                    # Formater la sortie du serveur avec limitation de longueur
+                    formatted_output = format_server_output(sshadress, stderr, stdout)
                     
                     if server_started:
-                        await interaction.response.send_message(f"✅ Serveur démarré avec succès en {elapsed_time}s ! " + message, ephemeral=True)
+                        success_msg = f"✅ Serveur démarré avec succès en {elapsed_time}s !\n\n{formatted_output}"
+                        success_msg = truncate_message_for_discord(success_msg)
+                        await interaction.response.send_message(success_msg, ephemeral=True)
                     else:
-                        await interaction.response.send_message(f"⚠️ Problème lors du démarrage du serveur (temps: {elapsed_time}s). " + message, ephemeral=True)
+                        error_msg = f"⚠️ Problème lors du démarrage du serveur (temps: {elapsed_time}s).\n\n{formatted_output}"
+                        error_msg = truncate_message_for_discord(error_msg)
+                        await interaction.response.send_message(error_msg, ephemeral=True)
             await interaction.response.defer()
                 
 
