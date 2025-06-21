@@ -395,8 +395,10 @@ async def on_interaction(interaction: discord.Interaction):
 
                     print(resultatssh.stdout)
                     print(resultatssh.stderr)
+
+                    message = str(sshadress) + "\n" + str(resultatssh.stderr) + "\n" + str(resultatssh.stdout)
                     
-                    await interaction.response.send_message("Vous avez lancé la partie.", ephemeral=True)
+                    await interaction.response.send_message("Vous avez lancé la partie. " + message, ephemeral=True)
             await interaction.response.defer()
                 
 
