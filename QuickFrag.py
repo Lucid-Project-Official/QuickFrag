@@ -566,6 +566,8 @@ async def on_interaction(interaction: discord.Interaction):
 
                     # Démarrage du compte à rebours et de la commande SSH
                     start_time = asyncio.get_event_loop().time()
+
+                    await interaction.response.defer()
                     
                     # Mise à jour initiale de tous les messages liés avec le bouton de démarrage
                     await update_all_linked_messages_with_starting_server(PlayedMatchID, 60)
