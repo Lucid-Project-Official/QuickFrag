@@ -1,6 +1,8 @@
-import discord, psycopg2, asyncio, re, json, subprocess, random, os
+import discord, asyncio, re, json, subprocess, random, os
 from discord.ext import commands
 from discord import app_commands
+from supabase import create_client, Client
+
 intents = discord.Intents.default()
 intents.message_content = True
 
@@ -8,30 +10,21 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 CLE_DISCORD = os.getenv("DISCORD_TOKEN")
 
-BDD_USER = os.getenv("OVH_USER")
-BDD_PASSW = os.getenv("OVH_PASSW")
-BDD_HOST = os.getenv("OVH_HOST")
-BDD_PORT = os.getenv("OVH_PORT")
-BDD_DATABASE = os.getenv("OVH_DATABASE")
-BDD_SSLMODE = os.getenv("OVH_SSL")
-BDD_SSLPATH = os.getenv("OVH_SSLPATH")
+# Configuration Supabase
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 countdown_flags = {}
 
 async def update_embed(interaction, match_id, is_modifiabled):
-    connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
-    cursor = connection.cursor()
-
-    CreatorName = ""
+    # Récupération du nom du créateur
+    response = supabase.table("Matchs").select("match_CreatorName").eq("match_ID", match_id).execute()
     
-    with connection.cursor() as cur:
-        cur.execute("""
-            SELECT match_CreatorName FROM Matchs
-            WHERE match_ID = %s
-        """,(match_id,))
-
-        CreatorName = cur.fetchone()[0]
+    CreatorName = ""
+    if response.data and len(response.data) > 0:
+        CreatorName = response.data[0]["match_CreatorName"]
     
     embed = discord.Embed(
         title="🎯 LA GAME VA BIENTOT COMMENCER !",
@@ -54,19 +47,18 @@ async def update_embed(interaction, match_id, is_modifiabled):
     # Envoie l'embed initial
     #await interaction.message.edit(embed=embed, view=view)
     
-    with connection.cursor() as cur:
-        cur.execute("""
-            SELECT 
-                match_PlayerName_1, match_PlayerName_2, match_PlayerName_3, 
-                match_PlayerName_4, match_PlayerName_5, match_PlayerName_6,
-                match_PlayerName_7, match_PlayerName_8, match_PlayerName_9, 
-                match_PlayerName_10
-            FROM Matchs WHERE match_ID = %s AND match_Status = 1
-        """, (match_id,))
-        result = cur.fetchone()
+    # Récupération des noms des joueurs
+    players_response = supabase.table("Matchs").select(
+        "match_PlayerName_1, match_PlayerName_2, match_PlayerName_3, "
+        "match_PlayerName_4, match_PlayerName_5, match_PlayerName_6, "
+        "match_PlayerName_7, match_PlayerName_8, match_PlayerName_9, "
+        "match_PlayerName_10"
+    ).eq("match_ID", match_id).eq("match_Status", 1).execute()
+    
+    result = players_response.data[0] if players_response.data else None
 
     if result:
-        players = [name for name in result if name]  # filtre les None
+        players = [name for name in result.values() if name]  # filtre les None
 
         # Exemple simple : 5 joueurs par équipe
         blue_team = players[:5]
@@ -77,32 +69,30 @@ async def update_embed(interaction, match_id, is_modifiabled):
 
         await interaction.message.edit(embed=embed, view=view)
 
-        with connection.cursor() as cur:
-            cur.execute("""
-                SELECT 
-                    Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, 
-                    Linked_Embbeded_MSG_4, Linked_Embbeded_MSG_5, Linked_Embbeded_MSG_6,
-                    Linked_Embbeded_MSG_7, Linked_Embbeded_MSG_8, Linked_Embbeded_MSG_9, 
-                    Linked_Embbeded_MSG_10
-                FROM Matchs WHERE match_ID = %s AND match_Status = 1
-            """, (match_id,))
-            result = cur.fetchone()
+        # Récupération des messages liés
+        linked_msgs_response = supabase.table("Matchs").select(
+            "Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, "
+            "Linked_Embbeded_MSG_4, Linked_Embbeded_MSG_5, Linked_Embbeded_MSG_6, "
+            "Linked_Embbeded_MSG_7, Linked_Embbeded_MSG_8, Linked_Embbeded_MSG_9, "
+            "Linked_Embbeded_MSG_10"
+        ).eq("match_ID", match_id).eq("match_Status", 1).execute()
+        
+        result = linked_msgs_response.data[0] if linked_msgs_response.data else None
 
-        with connection.cursor() as cur:
-            cur.execute("""
-                SELECT 
-                    hosted_channelID, hosted_messageID
-                FROM Matchs WHERE match_ID = %s AND match_Status = 1
-            """, (match_id,))
-            result2 = cur.fetchone()
+        # Récupération du channel et message de l'hôte
+        host_response = supabase.table("Matchs").select(
+            "hosted_channelID, hosted_messageID"
+        ).eq("match_ID", match_id).eq("match_Status", 1).execute()
+        
+        result2 = host_response.data[0] if host_response.data else None
             
         if result:
-            data_listed = [data for data in result if data]  # filtre les None
+            data_listed = [data for data in result.values() if data]  # filtre les None
             for data_dict in data_listed :
                 dict_data = json.loads(data_dict)
                 channel = bot.get_channel(int(dict_data['channel_id']))
                 message = await channel.fetch_message(int(dict_data['message_id']))
-                if (str(dict_data['channel_id']) == str(result2[0])) and (str(dict_data['message_id']) == str(result2[1])) and (len(players) == 10) :
+                if (str(dict_data['channel_id']) == str(result2['hosted_channelID'])) and (str(dict_data['message_id']) == str(result2['hosted_messageID'])) and (len(players) == 10) :
                     enabled_view = StartGameViewButtons(quit_button)
                     await message.edit(embed=embed, view = enabled_view)
                 else:
@@ -120,9 +110,6 @@ class QuitButton(discord.ui.Button):
         if match_id not in countdown_flags:
             countdown_flags[match_id] = {"done": False}
         
-        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
-        cursor = connection.cursor()
-        
         self.message = interaction.message
         while self.countdown > 0:
             if countdown_flags[match_id]["done"]:
@@ -133,13 +120,8 @@ class QuitButton(discord.ui.Button):
         if self.countdown <= 0:
             countdown_flags[match_id]["done"] = True
             
-        with connection.cursor() as cur:
-            cur.execute("""
-                UPDATE Matchs
-                SET match_Status = 3
-                WHERE match_ID = %s
-            """, (match_id,))
-        connection.commit()
+        # Mise à jour du statut du match
+        supabase.table("Matchs").update({"match_Status": 3}).eq("match_ID", match_id).execute()
         
         cancel_embed = discord.Embed(
             title="⏱️ Partie annulée",
@@ -149,40 +131,34 @@ class QuitButton(discord.ui.Button):
         try:
             await self.message.edit(embed=cancel_embed, view=None)  
         except (discord.NotFound, AttributeError):
-            print("Impossible d’annuler : le message a été supprimé.")
+            print("Impossible d'annuler : le message a été supprimé.")
 
         await asyncio.sleep(5)
         
         channel = interaction.message.channel
 
-        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
-        cursor = connection.cursor()
-
-        result = None
-
-        with connection.cursor() as cur:
-            cur.execute("""
-                SELECT type_licence FROM Licence
-                WHERE Linked_discord_serverID = %s AND duree_validite_heure > 0
-            """, (str(interaction.guild.id),))
-
-            result = cur.fetchone()
+        # Récupération du type de licence
+        licence_response = supabase.table("Licence").select("type_licence").eq(
+            "Linked_discord_serverID", str(interaction.guild.id)
+        ).gt("duree_validite_heure", 0).execute()
+        
+        result = licence_response.data[0] if licence_response.data else None
             
         if result :
         
             embed = discord.Embed(
-                title=f'Offre **{result[0]}** active, lancer une partie dès maintenant !',
+                title=f'Offre **{result["type_licence"]}** active, lancer une partie dès maintenant !',
                 description = f'Assurez-vous que tout les joueurs qui participeront sont dans le channel vocal : <#{channel.id}>',
                 color=discord.Color.green()
             )
         view = StartFreeGameButton()
-        if result[0] == "FREE" :
+        if result["type_licence"] == "FREE" :
             view = StartFreeGameButton()
-        if result[0] == "BASIC" :
+        if result["type_licence"] == "BASIC" :
             view = StartFreeGameButton()
-        if result[0] == "EXPRESS" :
+        if result["type_licence"] == "EXPRESS" :
             view = StartGameButton()
-        if result[0] == "PREMIUM" :
+        if result["type_licence"] == "PREMIUM" :
             view = StartGameButton()
             
         view = StartGameButton()
@@ -244,34 +220,28 @@ class VocalChannelSelect(discord.ui.Select):
         channel_id = int(self.values[0])
         channel = interaction.guild.get_channel(channel_id)
         
-        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
-        cursor = connection.cursor()
-
-        result = None
-
-        with connection.cursor() as cur:
-            cur.execute("""
-                SELECT type_licence FROM Licence
-                WHERE Linked_discord_serverID = %s AND duree_validite_heure > 0
-            """, (str(interaction.guild.id),))
-
-            result = cur.fetchone()
+        # Récupération du type de licence avec Supabase
+        licence_response = supabase.table("Licence").select("type_licence").eq(
+            "Linked_discord_serverID", str(interaction.guild.id)
+        ).gt("duree_validite_heure", 0).execute()
+        
+        result = licence_response.data[0] if licence_response.data else None
             
         if result :
         
             embed = discord.Embed(
-                title=f'Offre **{result[0]}** active, lancer une partie dès maintenant !',
+                title=f'Offre **{result["type_licence"]}** active, lancer une partie dès maintenant !',
                 description = f'Assurez-vous que tout les joueurs qui participeront sont dans le channel vocal : <#{channel.id}>',
                 color=discord.Color.green()
             )
         view = StartFreeGameButton()
-        if result[0] == "FREE" :
+        if result["type_licence"] == "FREE" :
             view = StartFreeGameButton()
-        if result[0] == "BASIC" :
+        if result["type_licence"] == "BASIC" :
             view = StartFreeGameButton()
-        if result[0] == "EXPRESS" :
+        if result["type_licence"] == "EXPRESS" :
             view = StartGameButton()
-        if result[0] == "PREMIUM" :
+        if result["type_licence"] == "PREMIUM" :
             view = StartGameButton()
             
         view = StartGameButton()
@@ -302,27 +272,19 @@ class CléModal(discord.ui.Modal, title="Enregistrer votre bot QuickFrag"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
-        cursor = connection.cursor()
-        result = None
-
-        with connection.cursor() as cur:
-            cur.execute("""
-                SELECT * FROM Licence
-                WHERE cle_licence = %s AND duree_validite_heure > 0
-            """, (self.clé.value,))
-
-            result = cur.fetchone()
+        # Recherche de la licence avec Supabase
+        licence_response = supabase.table("Licence").select("*").eq(
+            "cle_licence", self.clé.value
+        ).gt("duree_validite_heure", 0).execute()
+        
+        result = licence_response.data[0] if licence_response.data else None
 
         if result:
-            with connection.cursor() as cur:
-                cur.execute("""
-                    UPDATE Licence
-                    SET Linked_discord_serverName = %s,
-                        Linked_discord_serverID = %s
-                    WHERE cle_licence = %s
-                """, (interaction.guild.name, interaction.guild.id,self.clé.value))
-            connection.commit()
+            # Mise à jour de la licence avec les informations du serveur
+            supabase.table("Licence").update({
+                "Linked_discord_serverName": interaction.guild.name,
+                "Linked_discord_serverID": interaction.guild.id
+            }).eq("cle_licence", self.clé.value).execute()
             
             # ✅ Clé correcte → on propose les salons vocaux
             voice_channels = [
@@ -370,107 +332,60 @@ async def on_interaction(interaction: discord.Interaction):
             user_joind_guild = interaction.guild.id
             #await interaction.response.defer()
             
-            connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
-            cursor = connection.cursor()
             match_created = False
-            result = None
-            with connection.cursor() as cur:
-                cur.execute("""
-                    SELECT server_State, match_ID, server_ID, server_IPAdress
-                    FROM ServersManager WHERE server_State = 1
-                """)
-                result = cur.fetchall()
+            # Récupération des serveurs disponibles
+            servers_response = supabase.table("ServersManager").select(
+                "server_State, match_ID, server_ID, server_IPAdress"
+            ).eq("server_State", 1).execute()
+            
+            result = servers_response.data if servers_response.data else []
             if result :
                 indexmatch = 0
                 for row in result :
-                    if row[1] == None :
+                    if row["match_ID"] == None :
                         match_created = True
                         break
                     indexmatch = indexmatch + 1
 
+                # Recherche du match correspondant à ce message
+                # Approche simplifiée : on récupère tous les matchs actifs et on vérifie les données JSON
+                all_matches_response = supabase.table("Matchs").select("*").eq("match_Status", 1).execute()
+                
                 result3 = None
-                with connection.cursor() as cur:
-                    params = [str(channel_id), str(interaction.message.id), str(user_joind_guild)] * 10
+                if all_matches_response.data:
+                    for match in all_matches_response.data:
+                        # Vérifier chaque champ de message lié
+                        for i in range(1, 11):
+                            msg_field = f"Linked_Embbeded_MSG_{i}"
+                            if match.get(msg_field):
+                                try:
+                                    msg_data = json.loads(match[msg_field])
+                                    if (str(msg_data.get('channel_id')) == str(channel_id) and 
+                                        str(msg_data.get('message_id')) == str(interaction.message.id) and 
+                                        str(msg_data.get('guild_id')) == str(user_joind_guild)):
+                                        result3 = match
+                                        break
+                                except json.JSONDecodeError:
+                                    continue
+                        if result3:
+                            break
 
-                    sql = """
-                    SELECT * FROM Matchs
-                    WHERE match_Status = 1 AND (
-                        (Linked_Embbeded_MSG_1 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_1::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_1::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_1::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_2 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_2::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_2::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_2::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_3 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_3::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_3::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_3::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_4 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_4::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_4::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_4::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_5 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_5::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_5::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_5::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_6 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_6::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_6::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_6::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_7 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_7::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_7::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_7::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_8 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_8::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_8::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_8::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_9 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_9::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_9::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_9::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_10 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_10::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_10::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_10::json->>'guild_id') = %s)
-                    )
-                    """
-
-                    cur.execute(sql, params)
-                    result3 = cur.fetchone()
-                if (result3) and  (match_created == True) :
+                if (result3) and (match_created == True) :
                     map_choiced = random.choice(list_mapName)
                     
-                    PlayedMatchID = result3[1]
-                    with connection.cursor() as cur:
-                        cur.execute("""
-                                UPDATE Matchs
-                                SET match_Status = 2
-                                WHERE match_ID = %s
-                            """, (PlayedMatchID,))
-                    connection.commit()
-                    with connection.cursor() as cur:
-                        cur.execute("""
-                                UPDATE ServersManager
-                                SET match_ID = %s,
-                                    server_State = 2,
-                                    server_Map = %s
-                                WHERE server_ID = %s
-                            """, (PlayedMatchID,map_choiced,result[indexmatch][2],))
-                    connection.commit()
+                    PlayedMatchID = result3["match_ID"]
+                    
+                    # Mise à jour du statut du match
+                    supabase.table("Matchs").update({"match_Status": 2}).eq("match_ID", PlayedMatchID).execute()
+                    
+                    # Mise à jour du serveur
+                    supabase.table("ServersManager").update({
+                        "match_ID": PlayedMatchID,
+                        "server_State": 2,
+                        "server_Map": map_choiced
+                    }).eq("server_ID", result[indexmatch]["server_ID"]).execute()
 
-                    sshadress = "ubuntu@"+str(result[indexmatch][3][:-6])
+                    sshadress = "ubuntu@"+str(result[indexmatch]["server_IPAdress"][:-6])
                     sshcommand = "sudo ./cs2_server_27016 " +map_choiced + " competitive restart" 
                     print(sshadress)
 
@@ -506,90 +421,45 @@ async def on_interaction(interaction: discord.Interaction):
                     f"🎧 Vous devez vous connecter sur le channel vocal : <#{channel.id}>", ephemeral=True
                 )
             else :
-                connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
-                cursor = connection.cursor()
+                # Recherche du match correspondant à ce message
+                all_matches_response = supabase.table("Matchs").select("*").eq("match_Status", 1).execute()
+                
                 result = None
-                with connection.cursor() as cur:
-                    
-
-                    params = [str(channel_id), str(interaction.message.id), str(user_joind_guild)] * 10
-
-                    sql = """
-                    SELECT * FROM Matchs
-                    WHERE match_Status = 1 AND (
-                        (Linked_Embbeded_MSG_1 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_1::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_1::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_1::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_2 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_2::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_2::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_2::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_3 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_3::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_3::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_3::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_4 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_4::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_4::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_4::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_5 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_5::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_5::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_5::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_6 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_6::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_6::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_6::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_7 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_7::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_7::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_7::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_8 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_8::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_8::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_8::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_9 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_9::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_9::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_9::json->>'guild_id') = %s)
-                     OR
-                        (Linked_Embbeded_MSG_10 IS NOT NULL AND
-                         (Linked_Embbeded_MSG_10::json->>'channel_id') = %s AND
-                         (Linked_Embbeded_MSG_10::json->>'message_id') = %s AND
-                         (Linked_Embbeded_MSG_10::json->>'guild_id') = %s)
-                    )
-                    """
-
-                    cur.execute(sql, params)
-                    result = cur.fetchone()
+                if all_matches_response.data:
+                    for match in all_matches_response.data:
+                        # Vérifier chaque champ de message lié
+                        for i in range(1, 11):
+                            msg_field = f"Linked_Embbeded_MSG_{i}"
+                            if match.get(msg_field):
+                                try:
+                                    msg_data = json.loads(match[msg_field])
+                                    if (str(msg_data.get('channel_id')) == str(channel_id) and 
+                                        str(msg_data.get('message_id')) == str(interaction.message.id) and 
+                                        str(msg_data.get('guild_id')) == str(user_joind_guild)):
+                                        result = match
+                                        break
+                                except json.JSONDecodeError:
+                                    continue
+                        if result:
+                            break
                     
                 if result :
                     team_picked = "BLUE"
                     
-                    match_id = int(result[1])
+                    match_id = int(result["match_ID"])
 
-                    with connection.cursor() as cur:
-                        cur.execute("""
-                            SELECT 
-                                Linked_Channel_Team_1, Linked_Channel_Team_2, Linked_Channel_Team_3, 
-                                Linked_Channel_Team_4, Linked_Channel_Team_5, Linked_Channel_Team_6,
-                                Linked_Channel_Team_7, Linked_Channel_Team_8, Linked_Channel_Team_9, 
-                                Linked_Channel_Team_10
-                            FROM Matchs WHERE match_ID = %s AND match_Status = 1
-                        """, (match_id,))
-                        result2 = cur.fetchone()
+                    # Récupération des équipes liées
+                    team_response = supabase.table("Matchs").select(
+                        "Linked_Channel_Team_1, Linked_Channel_Team_2, Linked_Channel_Team_3, "
+                        "Linked_Channel_Team_4, Linked_Channel_Team_5, Linked_Channel_Team_6, "
+                        "Linked_Channel_Team_7, Linked_Channel_Team_8, Linked_Channel_Team_9, "
+                        "Linked_Channel_Team_10"
+                    ).eq("match_ID", match_id).eq("match_Status", 1).execute()
+                    
+                    result2 = team_response.data[0] if team_response.data else None
                         
                     if result2 :
-                        data_listed = [data for data in result2 if data]  # filtre les None
+                        data_listed = [data for data in result2.values() if data]  # filtre les None
                         for data_dict in data_listed :
                             dict_data = json.loads(data_dict)
                             if str(dict_data['message_id']) == str(interaction.message.id) :
@@ -598,10 +468,10 @@ async def on_interaction(interaction: discord.Interaction):
                         player_slots = []
 
                         if team_picked == "BLUE":
-                            player_slots = [result[6], result[8], result[10], result[12], result[14]]
+                            player_slots = [result.get(f"match_PlayerName_{i}") for i in range(1, 6)]
                         else :
                             if team_picked == "RED":
-                                player_slots = [result[16], result[18], result[20], result[22], result[24]]
+                                player_slots = [result.get(f"match_PlayerName_{i}") for i in range(6, 11)]
                                 
                         filled_slots = sum(1 for slot in player_slots if slot is not None)
                         ids = 1
@@ -612,17 +482,13 @@ async def on_interaction(interaction: discord.Interaction):
                                 if team_picked == "RED":
                                     ids = filled_slots + 6
                                     
-                            col_name = f"match_PlayerName_{ids}"
-                            col_id = f"match_PlayerID_{ids}"
-
-                            with connection.cursor() as cur:
-                                cur.execute(f"""
-                                    UPDATE Matchs
-                                    SET {col_name} = %s,
-                                        {col_id} = %s
-                                    WHERE match_ID = %s
-                                """, (interaction.user.name, interaction.user.id, match_id,))
-                            connection.commit()
+                            # Mise à jour du joueur dans le match
+                            update_data = {
+                                f"match_PlayerName_{ids}": interaction.user.name,
+                                f"match_PlayerID_{ids}": interaction.user.id
+                            }
+                            
+                            supabase.table("Matchs").update(update_data).eq("match_ID", match_id).execute()
 
                             is_modifiabled = 0
 
@@ -653,19 +519,11 @@ async def on_interaction(interaction: discord.Interaction):
                     f"🎧 Vous devez vous connecter sur le channel vocal : <#{channel.id}>", ephemeral=True
                 )
             else : 
-
-                connection = psycopg2.connect(user=BDD_USER,password=BDD_PASSW,host=BDD_HOST,port=BDD_PORT,dbname=BDD_DATABASE,sslmode=BDD_SSLMODE,sslrootcert=BDD_SSLPATH)
-                cursor = connection.cursor()
-
-                result = None
-
-                with connection.cursor() as cur:
-                    cur.execute("""
-                        SELECT * FROM Matchs
-                        WHERE match_Status = 1 AND private_party = FALSE
-                    """)
-
-                    result = cur.fetchall()
+                # Récupération des matchs publics existants
+                public_matches_response = supabase.table("Matchs").select("*").eq("match_Status", 1).eq("private_party", False).execute()
+                
+                result = public_matches_response.data if public_matches_response.data else []
+                
                 if result :
 
                     available_members = [m for m in channel.members if not m.bot]
@@ -675,12 +533,12 @@ async def on_interaction(interaction: discord.Interaction):
                     list_best_match_blue = []
                     
                     for row in result:
-                        # On récupère les 5 slots joueurs dans une liste
-                        player_slots = [row[16], row[18], row[20], row[22], row[24]]
+                        # On récupère les 5 slots joueurs RED dans une liste
+                        player_slots = [row.get(f"match_PlayerName_{i}") for i in range(6, 11)]
                         filled_slots = sum(1 for slot in player_slots if slot is not None)
                         empty_slots = 5 - filled_slots
 
-                        # Si la partie est complète, on ignore (0 signifie pas d’intérêt ici)
+                        # Si la partie est complète, on ignore (0 signifie pas d'intérêt ici)
                         if empty_slots == 0:
                             list_best_match_red.append(0)
                             continue
@@ -693,12 +551,12 @@ async def on_interaction(interaction: discord.Interaction):
                             list_best_match_red.append(filled_slots + nb_actual_players)
                     
                     for row in result:
-                        # On récupère les 5 slots joueurs dans une liste
-                        player_slots = [row[6], row[8], row[10], row[12], row[14]]
+                        # On récupère les 5 slots joueurs BLUE dans une liste
+                        player_slots = [row.get(f"match_PlayerName_{i}") for i in range(1, 6)]
                         filled_slots = sum(1 for slot in player_slots if slot is not None)
                         empty_slots = 5 - filled_slots
 
-                        # Si la partie est complète, on ignore (0 signifie pas d’intérêt ici)
+                        # Si la partie est complète, on ignore (0 signifie pas d'intérêt ici)
                         if empty_slots == 0:
                             list_best_match_blue.append(0)
                             continue
@@ -723,192 +581,124 @@ async def on_interaction(interaction: discord.Interaction):
 
                     is_red_team = (max(list_best_match_red) >= max(list_best_match_blue))
                     
-                    if is_red_team:
-                        slot_start_index = 16
-                    else:
-                        slot_start_index = 6
-
                     slots_to_fill = []
                     
-                    if slot_start_index == 6 :
-                        id_slot_player = 1
-                    else :
+                    if is_red_team:
                         id_slot_player = 6
-                        
-                    for i in range(5):
-                        name_col_index = slot_start_index + i * 2
-                        if best_match_row[name_col_index] is None:
-                            slots_to_fill.append((f"match_PlayerName_{id_slot_player}", f"match_PlayerID_{id_slot_player}"))
-                        id_slot_player = id_slot_player + 1
+                        for i in range(6, 11):
+                            if best_match_row.get(f"match_PlayerName_{i}") is None:
+                                slots_to_fill.append((f"match_PlayerName_{i}", f"match_PlayerID_{i}"))
+                    else:
+                        id_slot_player = 1
+                        for i in range(1, 6):
+                            if best_match_row.get(f"match_PlayerName_{i}") is None:
+                                slots_to_fill.append((f"match_PlayerName_{i}", f"match_PlayerID_{i}"))
 
                     slots_to_fill = slots_to_fill[:len(available_members)]
 
-                    set_parts = []
-                    values = []
-
+                    # Préparation des données de mise à jour
+                    update_data = {}
                     for (name_col, id_col), member in zip(slots_to_fill, available_members):
-                        set_parts.append(f"{name_col} = %s, {id_col} = %s")
-                        values.extend([member.name, str(member.id)])
+                        update_data[name_col] = member.name
+                        update_data[id_col] = str(member.id)
 
-                    set_clause = ", ".join(set_parts)
-
-                    # Ajout de la clause WHERE avec l'ID du match
-                    match_id = best_match_row[1]  # À adapter si match_ID n'est pas à l’index 0
-                    values.append(match_id)
-
-                    # Requête SQL finale
-                    query = f"""
-                        UPDATE Matchs
-                        SET {set_clause}
-                        WHERE match_ID = %s
-                    """
-                    with connection.cursor() as cur:
-                        cur.execute(query, values)
-                    connection.commit()
+                    match_id = best_match_row["match_ID"]
                     
-                    with connection.cursor() as cur:
-                        cur.execute("""
-                            SELECT 
-                                Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, 
-                                Linked_Embbeded_MSG_4, Linked_Embbeded_MSG_5, Linked_Embbeded_MSG_6,
-                                Linked_Embbeded_MSG_7, Linked_Embbeded_MSG_8, Linked_Embbeded_MSG_9, 
-                                Linked_Embbeded_MSG_10
-                            FROM Matchs WHERE match_ID = %s AND match_Status = 1
-                        """, (match_id,))
-                        result = cur.fetchone()
+                    # Mise à jour du match
+                    supabase.table("Matchs").update(update_data).eq("match_ID", match_id).execute()
+                    
+                    # Récupération des messages liés existants
+                    linked_msgs_response = supabase.table("Matchs").select(
+                        "Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, "
+                        "Linked_Embbeded_MSG_4, Linked_Embbeded_MSG_5, Linked_Embbeded_MSG_6, "
+                        "Linked_Embbeded_MSG_7, Linked_Embbeded_MSG_8, Linked_Embbeded_MSG_9, "
+                        "Linked_Embbeded_MSG_10"
+                    ).eq("match_ID", match_id).eq("match_Status", 1).execute()
+                    
+                    existing_msgs = linked_msgs_response.data[0] if linked_msgs_response.data else {}
 
                     len_List = 0
-                    
-                    if result:
-                        len_List = len([data for data in result if data])
+                    if existing_msgs:
+                        len_List = sum(1 for i in range(1, 11) if existing_msgs.get(f"Linked_Embbeded_MSG_{i}"))
                         
-                    # Exécution SQL
-                    with connection.cursor() as cur:
+                    # Ajout du nouveau message lié
+                    data = {
+                        "message_id" : interaction.message.id,
+                        "channel_id" : interaction.channel.id,
+                        "guild_id" : interaction.guild.id
+                    }
 
-                        data = {
-                            "message_id" : interaction.message.id,
-                            "channel_id" : interaction.channel.id,
-                            "guild_id" : interaction.guild.id
-                        }
+                    serialized_data = json.dumps(data)
 
-                        serialized_data = json.dumps(data)
+                    supabase.table("Matchs").update({
+                        f"Linked_Embbeded_MSG_{len_List + 1}": serialized_data
+                    }).eq("match_ID", match_id).execute()
 
-                        cur.execute("""
-                            UPDATE Matchs
-                            SET Linked_Embbeded_MSG_%s = %s
-                            WHERE match_ID = %s
-                        """, (len_List + 1, serialized_data, match_id,))
-                        
-                    connection.commit()
+                    # Ajout des informations d'équipe
+                    team_data = {
+                        "message_id" : interaction.message.id,
+                        "team_picked" : "RED" if is_red_team else "BLUE"
+                    }
 
-                    with connection.cursor() as cur:
-                        cur.execute("""
-                            SELECT 
-                                Linked_Channel_Team_1, Linked_Channel_Team_2, Linked_Channel_Team_3, 
-                                Linked_Channel_Team_4, Linked_Channel_Team_5, Linked_Channel_Team_6,
-                                Linked_Channel_Team_7, Linked_Channel_Team_8, Linked_Channel_Team_9, 
-                                Linked_Channel_Team_10
-                            FROM Matchs WHERE match_ID = %s AND match_Status = 1
-                        """, (match_id,))
-                        result = cur.fetchone()
+                    team_serialized_data = json.dumps(team_data)
 
-                    len_List = 0
-                    
-                    if result:
-                        len_List = len([data for data in result if data])
-                        
-                    # Exécution SQL
-                    team_picked = "BLUE"
-                    
-                    with connection.cursor() as cur:
-    
-                        if is_red_team :
-                            team_picked = "RED"
-                        else :
-                            team_picked = "BLUE"
-                            
-                        data = {
-                            "message_id" : interaction.message.id,
-                            "team_picked" : team_picked
-                        }
-
-                        serialized_data = json.dumps(data)
-
-                        cur.execute("""
-                            UPDATE Matchs
-                            SET Linked_Channel_Team_%s = %s
-                            WHERE match_ID = %s
-                        """, (len_List + 1, serialized_data, match_id,))
-                        
-                    connection.commit()
+                    supabase.table("Matchs").update({
+                        f"Linked_Channel_Team_{len_List + 1}": team_serialized_data
+                    }).eq("match_ID", match_id).execute()
 
                     is_modifiabled = 1
                     
                 else :
-                    with connection.cursor() as cur:
-                        cur.execute("""SELECT COALESCE(MAX(match_ID), 0) FROM Matchs""")
-                        match_id = cur.fetchone()[0] + 1
+                    # Création d'un nouveau match
+                    # Récupération du prochain ID de match
+                    max_id_response = supabase.table("Matchs").select("match_ID").order("match_ID", desc=True).limit(1).execute()
+                    match_id = (max_id_response.data[0]["match_ID"] + 1) if max_id_response.data else 1
                         
-                        columns = [
-                            'match_ID', 'private_party', 'match_Offer_type', 'match_Status',
-                            'match_CreatorName', 'hosted_server_discordName', 'hosted_server_discordID', 'hosted_channelID','hosted_messageID'
-                        ]
-                        values = [
-                            match_id, False, 'PREMIUM', 1,
-                            interaction.user.name, interaction.guild.name, interaction.guild.id, interaction.channel.id, interaction.message.id
-                        ]
+                    # Préparation des données du nouveau match
+                    match_data = {
+                        'match_ID': match_id,
+                        'private_party': False,
+                        'match_Offer_type': 'PREMIUM',
+                        'match_Status': 1,
+                        'match_CreatorName': interaction.user.name,
+                        'hosted_server_discordName': interaction.guild.name,
+                        'hosted_server_discordID': interaction.guild.id,
+                        'hosted_channelID': interaction.channel.id,
+                        'hosted_messageID': interaction.message.id
+                    }
 
-                        # Ajouter dynamiquement les colonnes des joueurs
-                        for i, member in enumerate(channel.members, start=1):
-                            columns.append(f'match_PlayerName_{i}')
-                            columns.append(f'match_PlayerID_{i}')
-                            values.append(member.name)
-                            values.append(member.id)
+                    # Ajouter dynamiquement les colonnes des joueurs
+                    for i, member in enumerate(channel.members, start=1):
+                        match_data[f'match_PlayerName_{i}'] = member.name
+                        match_data[f'match_PlayerID_{i}'] = member.id
 
-                        # Construction dynamique de la requête
-                        placeholders = ', '.join(['%s'] * len(values))
-                        columns_str = ', '.join(columns)
+                    # Insertion du nouveau match
+                    supabase.table("Matchs").insert(match_data).execute()
 
-                        query = f"""
-                            INSERT INTO Matchs ({columns_str})
-                            VALUES ({placeholders})
-                        """
+                    # Ajout du message lié
+                    data = {
+                        "message_id" : interaction.message.id,
+                        "channel_id" : interaction.channel.id,
+                        "guild_id" : interaction.guild.id
+                    }
 
-                        cur.execute(query, values)
+                    serialized_data = json.dumps(data)
 
-                        data = {
-                            "message_id" : interaction.message.id,
-                            "channel_id" : interaction.channel.id,
-                            "guild_id" : interaction.guild.id
-                        }
+                    supabase.table("Matchs").update({
+                        "Linked_Embbeded_MSG_1": serialized_data
+                    }).eq("match_ID", match_id).execute()
 
-                        serialized_data = json.dumps(data)
+                    # Ajout des informations d'équipe
+                    team_data = {
+                        "message_id" : interaction.message.id,
+                        "team_picked" : "BLUE"
+                    }
 
-                        cur.execute("""
-                            UPDATE Matchs
-                            SET Linked_Embbeded_MSG_1 = %s
-                            WHERE match_ID = %s
-                        """, (serialized_data, match_id,))
-                    connection.commit()
+                    team_serialized_data = json.dumps(team_data)
 
-                    with connection.cursor() as cur:
-
-                        team_picked = "BLUE"
-                            
-                        data = {
-                            "message_id" : interaction.message.id,
-                            "team_picked" : team_picked
-                        }
-
-                        serialized_data = json.dumps(data)
-
-                        cur.execute("""
-                            UPDATE Matchs
-                            SET Linked_Channel_Team_1 = %s
-                            WHERE match_ID = %s
-                        """, (serialized_data, match_id,))
-                        
-                    connection.commit()
+                    supabase.table("Matchs").update({
+                        "Linked_Channel_Team_1": team_serialized_data
+                    }).eq("match_ID", match_id).execute()
                     
                     is_modifiabled = 1
                 
