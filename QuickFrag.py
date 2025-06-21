@@ -389,7 +389,7 @@ async def on_interaction(interaction: discord.Interaction):
                     sshcommand = "sudo ./cs2_server_27016 " +map_choiced + " competitive restart" 
                     print(sshadress)
 
-                    ssh_command= ["ssh","-i","/home/root/.ssh/id_rsa_cs2","-o","StrictHostKeyChecking=no",sshadress,sshcommand]
+                    ssh_command= ["ssh","-i","/root/.ssh/id_rsa_cs2","-o","StrictHostKeyChecking=no",sshadress,sshcommand]
 
                     resultatssh = subprocess.run(ssh_command, capture_output=True, text=True)
 
