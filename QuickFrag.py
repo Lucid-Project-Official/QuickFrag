@@ -2,6 +2,7 @@ import discord, asyncio, re, json, subprocess, random, os
 from discord.ext import commands
 from discord import app_commands
 from supabase import create_client, Client
+from pathlib import Path
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -386,10 +387,12 @@ async def on_interaction(interaction: discord.Interaction):
                     }).eq("server_ID", result[indexmatch]["server_ID"]).execute()
 
                     sshadress = "ubuntu@"+str(result[indexmatch]["server_IPAdress"][:-6])
-                    sshcommand = "sudo ./cs2_server_27016 " +map_choiced + " competitive restart" 
+                    sshcommand = "sudo ./cs2_server_27016 " +map_choiced + " competitive restart"
+                    ssh_key = str(Path.home() / ".ssh" / "id_rsa_cs2")
+
                     print(sshadress)
 
-                    ssh_command= ["ssh","-i","/root/.ssh/id_rsa_cs2","-o","StrictHostKeyChecking=no",sshadress,sshcommand]
+                    ssh_command= ["ssh","-i",ssh_key,"-o","StrictHostKeyChecking=no",sshadress,sshcommand]
 
                     resultatssh = subprocess.run(ssh_command, capture_output=True, text=True)
 
