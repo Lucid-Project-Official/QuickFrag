@@ -1,4 +1,4 @@
-import discord, asyncio, re, json, subprocess, random, os
+import discord, asyncio, re, json, subprocess, random, os, sys, getpass, platform
 from discord.ext import commands
 from discord import app_commands
 from supabase import create_client, Client
@@ -318,6 +318,16 @@ async def on_ready():
     print(f'We have logged in as {bot.user}')
     for guild in bot.guilds:
         print(f"Connecté à : {guild.name} (ID : {guild.id})")
+
+    print("====== CONTEXTE D'EXÉCUTION ======")
+    print(f"Utilisateur courant    : {getpass.getuser()}", flush=True)
+    print(f"UID                    : {os.getuid() if hasattr(os, 'getuid') else 'N/A'}", flush=True)
+    print(f"Chemin actuel          : {os.getcwd()}", flush=True)
+    print(f"Fichier lancé          : {__file__}", flush=True)
+    print(f"Arguments de lancement : {sys.argv}", flush=True)
+    print(f"Système                : {platform.system()} {platform.release()}", flush=True)
+    print(f"Python utilisé         : {sys.executable}", flush=True)
+    print("==================================\n")
 
 @bot.event
 async def on_interaction(interaction: discord.Interaction):
