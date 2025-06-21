@@ -388,7 +388,7 @@ async def on_interaction(interaction: discord.Interaction):
 
                     sshadress = "ubuntu@"+str(result[indexmatch]["server_IPAdress"][:-6])
                     sshcommand = "sudo ./cs2_server_27016 " +map_choiced + " competitive restart"
-                    ssh_key = str(Path.home() / ".ssh" / "id_rsa_cs2")
+                    ssh_key = "/root/.ssh/id_rsa_cs2"
 
                     print(sshadress)
 
