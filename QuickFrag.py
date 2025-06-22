@@ -362,7 +362,7 @@ class ConnectServerViewButtons(discord.ui.View):
         
         if server_ip:
             # Création du lien Steam connect
-            steam_connect_url = f"steam://connect/{server_ip}:27015"
+            steam_connect_url = f"https://steam://connect/{server_ip}:27015"
             self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, url=steam_connect_url))
         else:
             self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, disabled=True))
