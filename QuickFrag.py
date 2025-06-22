@@ -130,7 +130,7 @@ async def create_connect_embed(match_id, guild):
     # Récupération de l'emoji personnalisé SilverOne
     silver_one_emoji = None
     for emoji in guild.emojis:
-        if emoji.name == "SilverOne":
+        if emoji.name == "SilverOneScaled":
             silver_one_emoji = str(emoji)
             break
     
