@@ -107,7 +107,7 @@ async def update_all_linked_messages_with_starting_server(match_id, countdown_se
                 print(f"Erreur lors de la mise à jour du message: {e}")
                 continue
 
-async def create_connect_embed(match_id):
+async def create_connect_embed(match_id, guild):
     """Crée l'embed avec les joueurs et l'emoji SilverOne pour la connexion au serveur"""
     # Récupération du nom du créateur
     response = supabase.table("Matchs").select("match_CreatorName").eq("match_ID", match_id).execute()
@@ -127,6 +127,17 @@ async def create_connect_embed(match_id):
 
     embed.set_thumbnail(url="https://seek-team-prod.s3.fr-par.scw.cloud/users/67c758968e61a685175513.jpg")
 
+    # Récupération de l'emoji personnalisé SilverOne
+    silver_one_emoji = None
+    for emoji in guild.emojis:
+        if emoji.name == "SilverOne":
+            silver_one_emoji = str(emoji)
+            break
+    
+    # Si l'emoji n'est pas trouvé, utiliser un emoji par défaut
+    if not silver_one_emoji:
+        silver_one_emoji = "🥈"  # Emoji médaille d'argent par défaut
+
     # Récupération des noms des joueurs
     players_response = supabase.table("Matchs").select(
         "match_PlayerName_1, match_PlayerName_2, match_PlayerName_3, "
@@ -145,8 +156,8 @@ async def create_connect_embed(match_id):
         red_team = players[5:]
 
         # Ajouter l'emoji SilverOne après chaque nom de joueur
-        blue_team_with_emoji = [f"{player} :SilverOne:" for player in blue_team]
-        red_team_with_emoji = [f"{player} :SilverOne:" for player in red_team]
+        blue_team_with_emoji = [f"{player} {silver_one_emoji}" for player in blue_team]
+        red_team_with_emoji = [f"{player} {silver_one_emoji}" for player in red_team]
 
         embed.set_field_at(0, name="EQUIPE BLEU :", value="🔹 " + '\n🔹 '.join(blue_team_with_emoji) if blue_team_with_emoji else "🔹", inline=True)
         embed.set_field_at(1, name="EQUIPE ROUGE :", value="🔸 " + '\n🔸 '.join(red_team_with_emoji) if red_team_with_emoji else "🔸", inline=True)
@@ -171,9 +182,6 @@ async def update_all_linked_messages_with_connect_button(match_id):
         elif server_ip.endswith(":27016"):
             server_ip = server_ip[:-6]  # Enlever :27016
     
-    # Créer le nouvel embed avec les emojis SilverOne
-    connect_embed = await create_connect_embed(match_id)
-    
     # Récupération des messages liés
     linked_msgs_response = supabase.table("Matchs").select(
         "Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, "
@@ -193,6 +201,9 @@ async def update_all_linked_messages_with_connect_button(match_id):
                 if channel:
                     message = await channel.fetch_message(int(dict_data['message_id']))
                     if message:
+                        # Créer le nouvel embed avec les emojis SilverOne (en utilisant le guild du channel)
+                        connect_embed = await create_connect_embed(match_id, channel.guild)
+                        
                         # Créer la vue avec le bouton Se connecter (avec l'IP du serveur)
                         quit_button = QuitButton()
                         connect_view = ConnectServerViewButtons(quit_button, server_ip)
