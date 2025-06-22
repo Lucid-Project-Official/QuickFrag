@@ -358,15 +358,9 @@ class StartingServerViewButtons(discord.ui.View):
 class ConnectServerViewButtons(discord.ui.View):
     def __init__(self, quit_button: QuitButton, server_ip: str = None):
         super().__init__(timeout=None)
+        self.server_ip = server_ip
         self.add_item(discord.ui.Button(label="Rejoindre la partie", style=discord.ButtonStyle.blurple, custom_id="join_game"))
-        
-        if server_ip:
-            # Création du lien Steam connect
-            steam_connect_url = f"https://steam://connect/{server_ip}:27015"
-            self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, url=steam_connect_url))
-        else:
-            self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, disabled=True))
-            
+        self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, disabled=False, custom_id="connect_server"))
         self.add_item(quit_button)
 
 class GameFreeActionButtons(discord.ui.View):
@@ -519,7 +513,72 @@ async def on_interaction(interaction: discord.Interaction):
             await interaction.response.defer()
         if interaction.data.get("custom_id") == "create_private_game":
             await interaction.response.defer()
-
+        if interaction.data.get("custom_id") == "connect_server":
+            channel = interaction.channel
+            channel_id = channel.id
+            user_joind_guild = interaction.guild.id
+            
+            # Recherche du match correspondant à ce message
+            all_matches_response = supabase.table("Matchs").select("*").eq("match_Status", 2).execute()
+            
+            result = None
+            if all_matches_response.data:
+                for match in all_matches_response.data:
+                    # Vérifier chaque champ de message lié
+                    for i in range(1, 11):
+                        msg_field = f"Linked_Embbeded_MSG_{i}"
+                        if match.get(msg_field):
+                            try:
+                                msg_data = json.loads(match[msg_field])
+                                if (str(msg_data.get('channel_id')) == str(channel_id) and 
+                                    str(msg_data.get('message_id')) == str(interaction.message.id) and 
+                                    str(msg_data.get('guild_id')) == str(user_joind_guild)):
+                                    result = match
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+                    if result:
+                        break
+            
+            if result:
+                match_id = result["match_ID"]
+                
+                # Récupération des informations du serveur
+                server_response = supabase.table("ServersManager").select(
+                    "server_IPAdress"
+                ).eq("match_ID", match_id).eq("server_State", 2).execute()
+                
+                server_data = server_response.data[0] if server_response.data else None
+                
+                if server_data:
+                    # Extraction de l'IP (enlever le port par défaut s'il existe)
+                    server_ip = server_data["server_IPAdress"]
+                    if server_ip.endswith(":27015"):
+                        server_ip = server_ip[:-6]  # Enlever :27015
+                    elif server_ip.endswith(":27016"):
+                        server_ip = server_ip[:-6]  # Enlever :27016
+                    
+                    embed = discord.Embed(
+                        title="🎮 Connexion au serveur CS2",
+                        description=f"**Copiez cette commande et collez-la dans votre console CS2 :**\n\n`connect {server_ip}:27015`",
+                        color=discord.Color.green()
+                    )
+                    embed.add_field(
+                        name="📋 Instructions",
+                        value="1. Ouvrez Counter-Strike 2\n2. Appuyez sur **`** (tilde) pour ouvrir la console\n3. Copiez-collez la commande ci-dessus\n4. Appuyez sur Entrée pour vous connecter",
+                        inline=False
+                    )
+                    embed.add_field(
+                        name="🔗 Commande de connexion",
+                        value=f"```connect {server_ip}:27015```",
+                        inline=False
+                    )
+                    
+                    await interaction.response.send_message(embed=embed, ephemeral=True)
+                else:
+                    await interaction.response.send_message("❌ Aucun serveur trouvé pour ce match.", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ Match non trouvé ou serveur non disponible.", ephemeral=True)
         if interaction.data.get("custom_id") == "start_game":
             list_mapName = ["de_ancient","de_anubis","de_dust2","de_inferno","de_mirage","de_nuke","de_overpass","de_train","de_vertigo"]
             channel = interaction.channel
