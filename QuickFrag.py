@@ -10,6 +10,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 CLE_DISCORD = os.getenv("DISCORD_TOKEN")
+EMOTES_DIR = "Emotes"
 
 # Configuration Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -18,6 +19,32 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 countdown_flags = {}
+
+async def sync_all_emojis():
+    # Liste tous les fichiers .webp du dossier
+    emote_files = [f for f in os.listdir(EMOTES_DIR) if f.lower().endswith(".webp")]
+
+    for guild in bot.guilds:
+        print(f"\n🔍 Traitement du serveur : {guild.name}")
+        for filename in emote_files:
+            emoji_name = os.path.splitext(filename)[0]
+
+            # Vérifie si l'émoji est déjà présent
+            if any(e.name == emoji_name for e in guild.emojis):
+                print(f"✅ Emoji '{emoji_name}' déjà présent")
+                continue
+
+            try:
+                with open(os.path.join(EMOTES_DIR, filename), "rb") as image_file:
+                    image_data = image_file.read()
+
+                await guild.create_custom_emoji(name=emoji_name, image=image_data)
+                print(f"🎉 Emoji '{emoji_name}' ajouté à {guild.name}")
+
+            except discord.Forbidden:
+                print(f"❌ Permission refusée dans : {guild.name}")
+            except discord.HTTPException as e:
+                print(f"❌ Erreur HTTP pour '{emoji_name}' dans {guild.name} : {e}")
 
 def truncate_message_for_discord(message: str, max_length: int = 2000) -> str:
     """Tronque un message pour respecter les limites de Discord"""
@@ -492,6 +519,7 @@ async def config(interaction: discord.Interaction):
 @bot.event
 async def on_ready():
     await bot.tree.sync()
+    await sync_all_emojis()
     print(f'We have logged in as {bot.user}')
     for guild in bot.guilds:
         print(f"Connecté à : {guild.name} (ID : {guild.id})")
