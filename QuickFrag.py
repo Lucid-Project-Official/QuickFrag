@@ -107,6 +107,52 @@ async def update_all_linked_messages_with_starting_server(match_id, countdown_se
                 print(f"Erreur lors de la mise à jour du message: {e}")
                 continue
 
+async def create_connect_embed(match_id):
+    """Crée l'embed avec les joueurs et l'emoji SilverOne pour la connexion au serveur"""
+    # Récupération du nom du créateur
+    response = supabase.table("Matchs").select("match_CreatorName").eq("match_ID", match_id).execute()
+    
+    CreatorName = ""
+    if response.data and len(response.data) > 0:
+        CreatorName = response.data[0]["match_CreatorName"]
+    
+    embed = discord.Embed(
+        title="🎮 SERVEUR PRÊT - CONNECTEZ-VOUS !",
+        description=f"**{CreatorName}** est le créateur de la partie !\nLe serveur est maintenant disponible, connectez-vous !",
+        color=discord.Color.green()
+    )
+
+    embed.add_field(name="EQUIPE BLEU :", value="🔹", inline=True)
+    embed.add_field(name="EQUIPE ROUGE :", value="🔸", inline=True)
+
+    embed.set_thumbnail(url="https://seek-team-prod.s3.fr-par.scw.cloud/users/67c758968e61a685175513.jpg")
+
+    # Récupération des noms des joueurs
+    players_response = supabase.table("Matchs").select(
+        "match_PlayerName_1, match_PlayerName_2, match_PlayerName_3, "
+        "match_PlayerName_4, match_PlayerName_5, match_PlayerName_6, "
+        "match_PlayerName_7, match_PlayerName_8, match_PlayerName_9, "
+        "match_PlayerName_10"
+    ).eq("match_ID", match_id).eq("match_Status", 2).execute()
+    
+    result = players_response.data[0] if players_response.data else None
+
+    if result:
+        players = [name for name in result.values() if name]  # filtre les None
+
+        # Exemple simple : 5 joueurs par équipe
+        blue_team = players[:5]
+        red_team = players[5:]
+
+        # Ajouter l'emoji SilverOne après chaque nom de joueur
+        blue_team_with_emoji = [f"{player} :SilverOne:" for player in blue_team]
+        red_team_with_emoji = [f"{player} :SilverOne:" for player in red_team]
+
+        embed.set_field_at(0, name="EQUIPE BLEU :", value="🔹 " + '\n🔹 '.join(blue_team_with_emoji) if blue_team_with_emoji else "🔹", inline=True)
+        embed.set_field_at(1, name="EQUIPE ROUGE :", value="🔸 " + '\n🔸 '.join(red_team_with_emoji) if red_team_with_emoji else "🔸", inline=True)
+
+    return embed
+
 async def update_all_linked_messages_with_connect_button(match_id):
     """Met à jour tous les messages liés avec le bouton Se connecter"""
     # Récupération de l'adresse IP du serveur
@@ -124,6 +170,9 @@ async def update_all_linked_messages_with_connect_button(match_id):
             server_ip = server_ip[:-6]  # Enlever :27015
         elif server_ip.endswith(":27016"):
             server_ip = server_ip[:-6]  # Enlever :27016
+    
+    # Créer le nouvel embed avec les emojis SilverOne
+    connect_embed = await create_connect_embed(match_id)
     
     # Récupération des messages liés
     linked_msgs_response = supabase.table("Matchs").select(
@@ -144,14 +193,12 @@ async def update_all_linked_messages_with_connect_button(match_id):
                 if channel:
                     message = await channel.fetch_message(int(dict_data['message_id']))
                     if message:
-                        # Récupérer l'embed existant
-                        current_embed = message.embeds[0] if message.embeds else None
-                        
                         # Créer la vue avec le bouton Se connecter (avec l'IP du serveur)
                         quit_button = QuitButton()
                         connect_view = ConnectServerViewButtons(quit_button, server_ip)
                         
-                        await message.edit(embed=current_embed, view=connect_view)
+                        # Utiliser le nouvel embed avec les emojis SilverOne
+                        await message.edit(embed=connect_embed, view=connect_view)
             except (json.JSONDecodeError, discord.NotFound, discord.Forbidden) as e:
                 print(f"Erreur lors de la mise à jour du message: {e}")
                 continue
