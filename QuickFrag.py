@@ -351,17 +351,17 @@ class StartGameViewButtons(discord.ui.View):
 class StartingServerViewButtons(discord.ui.View):
     def __init__(self, quit_button: QuitButton, countdown_seconds: int = 30):
         super().__init__(timeout=None)
-        self.add_item(discord.ui.Button(label="Rejoindre la partie", style=discord.ButtonStyle.blurple, custom_id="join_game"))
+        #self.add_item(discord.ui.Button(label="Rejoindre la partie", style=discord.ButtonStyle.blurple, custom_id="join_game"))
         self.add_item(discord.ui.Button(label=f"Démarrage du serveur ({countdown_seconds}s)", style=discord.ButtonStyle.green, disabled=True, custom_id="start_game"))
-        self.add_item(quit_button)
+        #self.add_item(quit_button)
 
 class ConnectServerViewButtons(discord.ui.View):
     def __init__(self, quit_button: QuitButton, server_ip: str = None):
         super().__init__(timeout=None)
         self.server_ip = server_ip
-        self.add_item(discord.ui.Button(label="Rejoindre la partie", style=discord.ButtonStyle.blurple, custom_id="join_game"))
+        #self.add_item(discord.ui.Button(label="Rejoindre la partie", style=discord.ButtonStyle.blurple, custom_id="join_game"))
         self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, disabled=False, custom_id="connect_server"))
-        self.add_item(quit_button)
+        #self.add_item(quit_button)
 
 class GameFreeActionButtons(discord.ui.View):
     def __init__(self, quit_button: QuitButton):
