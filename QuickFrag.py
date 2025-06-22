@@ -553,14 +553,10 @@ async def on_interaction(interaction: discord.Interaction):
                 if server_data:
                     # Extraction de l'IP (enlever le port par défaut s'il existe)
                     server_ip = server_data["server_IPAdress"]
-                    if server_ip.endswith(":27015"):
-                        server_ip = server_ip[:-6]  # Enlever :27015
-                    elif server_ip.endswith(":27016"):
-                        server_ip = server_ip[:-6]  # Enlever :27016
                     
                     embed = discord.Embed(
                         title="🎮 Connexion au serveur CS2",
-                        description=f"**Copiez cette commande et collez-la dans votre console CS2 :**\n\n`connect {server_ip}:27015`",
+                        description=f"**Copiez cette commande et collez-la dans votre console CS2 :**\n\n`connect {server_ip}`",
                         color=discord.Color.green()
                     )
                     embed.add_field(
@@ -570,7 +566,7 @@ async def on_interaction(interaction: discord.Interaction):
                     )
                     embed.add_field(
                         name="🔗 Commande de connexion",
-                        value=f"```connect {server_ip}:27015```",
+                        value=f"```connect {server_ip}```",
                         inline=False
                     )
                     
