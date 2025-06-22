@@ -82,6 +82,22 @@ async def update_all_linked_messages_with_starting_server(match_id, countdown_se
 
 async def update_all_linked_messages_with_connect_button(match_id):
     """Met à jour tous les messages liés avec le bouton Se connecter"""
+    # Récupération de l'adresse IP du serveur
+    server_response = supabase.table("ServersManager").select(
+        "server_IPAdress"
+    ).eq("match_ID", match_id).eq("server_State", 2).execute()
+    
+    server_data = server_response.data[0] if server_response.data else None
+    server_ip = None
+    
+    if server_data:
+        # Extraction de l'IP (enlever le port par défaut s'il existe)
+        server_ip = server_data["server_IPAdress"]
+        if server_ip.endswith(":27015"):
+            server_ip = server_ip[:-6]  # Enlever :27015
+        elif server_ip.endswith(":27016"):
+            server_ip = server_ip[:-6]  # Enlever :27016
+    
     # Récupération des messages liés
     linked_msgs_response = supabase.table("Matchs").select(
         "Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, "
@@ -104,9 +120,9 @@ async def update_all_linked_messages_with_connect_button(match_id):
                         # Récupérer l'embed existant
                         current_embed = message.embeds[0] if message.embeds else None
                         
-                        # Créer la vue avec le bouton Se connecter
+                        # Créer la vue avec le bouton Se connecter (avec l'IP du serveur)
                         quit_button = QuitButton()
-                        connect_view = ConnectServerViewButtons(quit_button)
+                        connect_view = ConnectServerViewButtons(quit_button, server_ip)
                         
                         await message.edit(embed=current_embed, view=connect_view)
             except (json.JSONDecodeError, discord.NotFound, discord.Forbidden) as e:
@@ -340,10 +356,17 @@ class StartingServerViewButtons(discord.ui.View):
         self.add_item(quit_button)
 
 class ConnectServerViewButtons(discord.ui.View):
-    def __init__(self, quit_button: QuitButton):
+    def __init__(self, quit_button: QuitButton, server_ip: str = None):
         super().__init__(timeout=None)
         self.add_item(discord.ui.Button(label="Rejoindre la partie", style=discord.ButtonStyle.blurple, custom_id="join_game"))
-        self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, disabled=False, custom_id="connect_server"))
+        
+        if server_ip:
+            # Création du lien Steam connect
+            steam_connect_url = f"steam://connect/{server_ip}:27015"
+            self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, url=steam_connect_url))
+        else:
+            self.add_item(discord.ui.Button(label="Se connecter", style=discord.ButtonStyle.green, disabled=True))
+            
         self.add_item(quit_button)
 
 class GameFreeActionButtons(discord.ui.View):
@@ -496,8 +519,7 @@ async def on_interaction(interaction: discord.Interaction):
             await interaction.response.defer()
         if interaction.data.get("custom_id") == "create_private_game":
             await interaction.response.defer()
-        if interaction.data.get("custom_id") == "connect_server":
-            await interaction.response.send_message("🎮 Connexion au serveur en cours...", ephemeral=True)
+
         if interaction.data.get("custom_id") == "start_game":
             list_mapName = ["de_ancient","de_anubis","de_dust2","de_inferno","de_mirage","de_nuke","de_overpass","de_train","de_vertigo"]
             channel = interaction.channel
