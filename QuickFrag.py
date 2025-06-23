@@ -147,7 +147,7 @@ async def create_connect_embed(match_id, guild):
                 return "🥈"  # Emoji par défaut
             
             # Récupération du rang du joueur dans la table Players
-            player_rank_response = supabase.table("Players").select("PlayerRank").eq("Steam_PlayerID", str(player_id)).execute()
+            player_rank_response = supabase.table("Players").select("PlayerRank").eq("Discord_PlayerID", str(player_id)).execute()
             
             if player_rank_response.data and len(player_rank_response.data) > 0:
                 player_rank = player_rank_response.data[0]["PlayerRank"]
