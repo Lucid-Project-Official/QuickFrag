@@ -108,7 +108,7 @@ async def update_all_linked_messages_with_starting_server(match_id, countdown_se
                 continue
 
 async def create_connect_embed(match_id, guild):
-    """Crée l'embed avec les joueurs et l'emoji SilverOne pour la connexion au serveur"""
+    """Crée l'embed avec les joueurs et l'emoji spécifique pour chaque joueur basé sur son rang"""
     # Récupération du nom du créateur
     response = supabase.table("Matchs").select("match_CreatorName").eq("match_ID", match_id).execute()
     
@@ -127,37 +127,61 @@ async def create_connect_embed(match_id, guild):
 
     embed.set_thumbnail(url="https://seek-team-prod.s3.fr-par.scw.cloud/users/67c758968e61a685175513.jpg")
 
-    # Récupération de l'emoji personnalisé SilverOne
-    silver_one_emoji = None
-    for emoji in guild.emojis:
-        if emoji.name == "SilverOneScaled":
-            silver_one_emoji = str(emoji)
-            break
-    
-    # Si l'emoji n'est pas trouvé, utiliser un emoji par défaut
-    if not silver_one_emoji:
-        silver_one_emoji = "🥈"  # Emoji médaille d'argent par défaut
-
-    # Récupération des noms des joueurs
+    # Récupération des noms et IDs des joueurs
     players_response = supabase.table("Matchs").select(
         "match_PlayerName_1, match_PlayerName_2, match_PlayerName_3, "
         "match_PlayerName_4, match_PlayerName_5, match_PlayerName_6, "
         "match_PlayerName_7, match_PlayerName_8, match_PlayerName_9, "
-        "match_PlayerName_10"
+        "match_PlayerName_10, match_PlayerID_1, match_PlayerID_2, match_PlayerID_3, "
+        "match_PlayerID_4, match_PlayerID_5, match_PlayerID_6, "
+        "match_PlayerID_7, match_PlayerID_8, match_PlayerID_9, "
+        "match_PlayerID_10"
     ).eq("match_ID", match_id).eq("match_Status", 2).execute()
     
     result = players_response.data[0] if players_response.data else None
 
     if result:
-        players = [name for name in result.values() if name]  # filtre les None
+        # Fonction pour obtenir l'emoji du rang d'un joueur
+        def get_player_rank_emoji(player_id):
+            if not player_id:
+                return "🥈"  # Emoji par défaut
+            
+            # Récupération du rang du joueur dans la table Players
+            player_rank_response = supabase.table("Players").select("PlayerRank").eq("Steam_PlayerID", str(player_id)).execute()
+            
+            if player_rank_response.data and len(player_rank_response.data) > 0:
+                player_rank = player_rank_response.data[0]["PlayerRank"]
+                
+                # Conversion du rang en nom d'emoji (exemple: "SilverOne" → "SilverOneScaled")
+                emoji_name = f"{player_rank}Scaled"
+                
+                # Recherche de l'emoji dans la guild
+                for emoji in guild.emojis:
+                    if emoji.name == emoji_name:
+                        return str(emoji)
+            
+            # Si l'emoji n'est pas trouvé, utiliser un emoji par défaut
+            return "🥈"
 
-        # Exemple simple : 5 joueurs par équipe
-        blue_team = players[:5]
-        red_team = players[5:]
-
-        # Ajouter l'emoji SilverOne après chaque nom de joueur
-        blue_team_with_emoji = [f"{player} {silver_one_emoji}" for player in blue_team]
-        red_team_with_emoji = [f"{player} {silver_one_emoji}" for player in red_team]
+        # Construire les listes avec les joueurs et leurs emojis spécifiques
+        blue_team_with_emoji = []
+        red_team_with_emoji = []
+        
+        # Équipe bleue (joueurs 1-5)
+        for i in range(1, 6):
+            player_name = result.get(f"match_PlayerName_{i}")
+            if player_name:
+                player_id = result.get(f"match_PlayerID_{i}")
+                player_emoji = get_player_rank_emoji(player_id)
+                blue_team_with_emoji.append(f"{player_name} {player_emoji}")
+        
+        # Équipe rouge (joueurs 6-10)
+        for i in range(6, 11):
+            player_name = result.get(f"match_PlayerName_{i}")
+            if player_name:
+                player_id = result.get(f"match_PlayerID_{i}")
+                player_emoji = get_player_rank_emoji(player_id)
+                red_team_with_emoji.append(f"{player_name} {player_emoji}")
 
         embed.set_field_at(0, name="EQUIPE BLEU :", value="🔹 " + '\n🔹 '.join(blue_team_with_emoji) if blue_team_with_emoji else "🔹", inline=True)
         embed.set_field_at(1, name="EQUIPE ROUGE :", value="🔸 " + '\n🔸 '.join(red_team_with_emoji) if red_team_with_emoji else "🔸", inline=True)
