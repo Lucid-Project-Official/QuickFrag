@@ -22,12 +22,6 @@ public class WhitelistPlugin : BasePlugin
     private readonly HashSet<string> recentlyKickedPlayers = new HashSet<string>();
     private readonly object kickLock = new object();
     
-    // Protection contre les requêtes multiples simultanées
-    private bool isLoadingWhitelist = false;
-    private readonly object whitelistLoadLock = new object();
-    private DateTime lastWhitelistLoad = DateTime.MinValue;
-    private readonly TimeSpan minLoadInterval = TimeSpan.FromSeconds(3); // Minimum 3 secondes entre les chargements
-    
     // Configuration Supabase - À MODIFIER avec vos vraies valeurs
     private const string SUPABASE_URL = "https://ifivxzwkkhwdbblgsbyo.supabase.co";
     private const string SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmaXZ4endra2h3ZGJibGdzYnlvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTQ4OTc0MiwiZXhwIjoyMDY1MDY1NzQyfQ.C-9hO1SdaOVK2KtZfA1C4nBq1JkUO33OOu3icErgdH4";
