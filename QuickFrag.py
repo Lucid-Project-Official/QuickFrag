@@ -738,12 +738,49 @@ async def on_interaction(interaction: discord.Interaction):
                     # Mise à jour du statut du match
                     supabase.table("Matchs").update({"match_Status": 2}).eq("match_ID", PlayedMatchID).execute()
                     
-                    # Mise à jour du serveur
-                    supabase.table("ServersManager").update({
+                    # Récupération des Discord_PlayerID des joueurs du match
+                    match_players_response = supabase.table("Matchs").select(
+                        "match_PlayerID_1, match_PlayerID_2, match_PlayerID_3, "
+                        "match_PlayerID_4, match_PlayerID_5, match_PlayerID_6, "
+                        "match_PlayerID_7, match_PlayerID_8, match_PlayerID_9, "
+                        "match_PlayerID_10"
+                    ).eq("match_ID", PlayedMatchID).execute()
+                    
+                    steam_ids_data = {}
+                    
+                    if match_players_response.data:
+                        match_data = match_players_response.data[0]
+                        
+                        # Pour chaque joueur, récupérer son SteamID depuis la table Players
+                        for i in range(1, 11):
+                            discord_player_id = match_data.get(f"match_PlayerID_{i}")
+                            if discord_player_id:
+                                # Récupération du SteamID depuis la table Players
+                                player_steam_response = supabase.table("Players").select(
+                                    "Steam_PlayerID"
+                                ).eq("Discord_PlayerID", str(discord_player_id)).execute()
+                                
+                                if player_steam_response.data:
+                                    steam_id = player_steam_response.data[0]["Steam_PlayerID"]
+                                    if steam_id:
+                                        steam_ids_data[f"match_playersteam_{i}"] = steam_id
+                                        print(f"[DEBUG] Joueur {i} - Discord ID: {discord_player_id} -> Steam ID: {steam_id}")
+                                else:
+                                    print(f"[WARNING] Aucun SteamID trouvé pour Discord ID: {discord_player_id}")
+                    
+                    # Mise à jour du serveur avec les SteamIDs
+                    server_update_data = {
                         "match_ID": PlayedMatchID,
                         "server_State": 2,
                         "server_Map": map_choiced
-                    }).eq("server_ID", result[indexmatch]["server_ID"]).execute()
+                    }
+                    
+                    # Ajouter les SteamIDs récupérés
+                    server_update_data.update(steam_ids_data)
+                    
+                    supabase.table("ServersManager").update(server_update_data).eq("server_ID", result[indexmatch]["server_ID"]).execute()
+                    
+                    print(f"[SUCCESS] Serveur mis à jour avec {len(steam_ids_data)} SteamIDs pour le match {PlayedMatchID}")
 
                     sshadress = "ubuntu@"+str(result[indexmatch]["server_IPAdress"][:-6])
                     sshcommand = "sudo ./cs2_server_27016 " +map_choiced + " competitive restart"
