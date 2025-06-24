@@ -56,15 +56,40 @@ public class WhitelistPlugin : BasePlugin
         Console.WriteLine("[INIT] Programmation du chargement de la whitelist dans 5 secondes...");
         Task.Delay(5000).ContinueWith(_ => 
         {
-            Console.WriteLine("[INIT] Début du chargement de la whitelist...");
+            Console.WriteLine("[INIT] Début du chargement initial de la whitelist...");
             _ = LoadWhitelistFromDatabase();
         });
+        
+        // Programmer un rechargement automatique toutes les 30 secondes
+        Console.WriteLine("[INIT] Programmation du rechargement automatique toutes les 30 secondes...");
+        StartPeriodicWhitelistReload();
         
         // Enregistrer les événements
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
         Console.WriteLine("[INIT] Événement PlayerConnectFull enregistré");
         
         Console.WriteLine("=== PLUGIN QUICKFRAG WHITELIST PRÊT ===");
+    }
+
+    private void StartPeriodicWhitelistReload()
+    {
+        Task.Run(async () =>
+        {
+            while (true)
+            {
+                try
+                {
+                    await Task.Delay(30000); // Attendre 30 secondes
+                    
+                    Console.WriteLine("[PERIODIC] Rechargement automatique de la whitelist...");
+                    await LoadWhitelistFromDatabase();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[PERIODIC] Erreur lors du rechargement automatique: {ex.Message}");
+                }
+            }
+        });
     }
 
     private void GetServerAddress()
@@ -256,82 +281,80 @@ public class WhitelistPlugin : BasePlugin
             if (player == null || !player.IsValid)
                 return HookResult.Continue;
 
-            Console.WriteLine($"[CONNECT] Nouvelle connexion détectée: {player.PlayerName}");
+            // APPROCHE SIMPLIFIÉE: Vérification immédiate avec les données en cache
+            // Pas de rechargement à la connexion pour éviter l'overflow réseau
             
-            // ÉTAPE 1: Vérifier si on peut/doit recharger la whitelist
-            bool shouldReload = false;
-            lock (whitelistLoadLock)
+            Server.NextFrame(() =>
             {
-                var timeSinceLastLoad = DateTime.Now - lastWhitelistLoad;
-                
-                if (!isLoadingWhitelist && timeSinceLastLoad >= minLoadInterval)
+                try
                 {
-                    shouldReload = true;
-                    isLoadingWhitelist = true;
-                    Console.WriteLine($"[CONNECT] Rechargement autorisé (dernière fois: {timeSinceLastLoad.TotalSeconds:F1}s)");
-                }
-                else if (isLoadingWhitelist)
-                {
-                    Console.WriteLine("[CONNECT] Rechargement déjà en cours, utilisation des données actuelles");
-                }
-                else
-                {
-                    Console.WriteLine($"[CONNECT] Rechargement trop récent ({timeSinceLastLoad.TotalSeconds:F1}s), utilisation des données actuelles");
-                }
-            }
-            
-            if (shouldReload)
-            {
-                // Charger la whitelist de manière contrôlée
-                Task.Run(async () =>
-                {
-                    try
+                    if (player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
                     {
-                        await LoadWhitelistFromDatabase();
+                        CheckPlayerAuthorizationSimple(player);
                     }
-                    finally
-                    {
-                        lock (whitelistLoadLock)
-                        {
-                            isLoadingWhitelist = false;
-                            lastWhitelistLoad = DateTime.Now;
-                        }
-                    }
-                    
-                    // ÉTAPE 2: Après le rechargement, vérifier l'autorisation
-                    Server.NextFrame(() =>
-                    {
-                        try
-                        {
-                            if (player == null || !player.IsValid || player.Connected != PlayerConnectedState.PlayerConnected)
-                            {
-                                Console.WriteLine("[CONNECT] Joueur déjà déconnecté, ignorer la vérification");
-                                return;
-                            }
-                            
-                            CheckPlayerAuthorization(player);
-                        }
-                        catch (Exception checkEx)
-                        {
-                            Console.WriteLine($"[ERROR] Erreur lors de la vérification d'autorisation: {checkEx.Message}");
-                        }
-                    });
-                });
-            }
-            else
-            {
-                // Utiliser directement les données actuelles sans rechargement
-                Console.WriteLine("[CONNECT] Vérification avec les données actuelles");
-                CheckPlayerAuthorization(player);
-            }
+                }
+                catch (Exception checkEx)
+                {
+                    Console.WriteLine($"[ERROR] Erreur lors de la vérification: {checkEx.Message}");
+                }
+            });
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[CRITICAL] Erreur dans OnPlayerConnectFull: {ex.Message}");
-            Console.WriteLine($"[CRITICAL] Stack trace: {ex.StackTrace}");
         }
 
         return HookResult.Continue;
+    }
+    
+    private void CheckPlayerAuthorizationSimple(CCSPlayerController player)
+    {
+        try
+        {
+            string playerSteamId64 = player.SteamID.ToString();
+            string playerName = player.PlayerName ?? "Unknown";
+            
+            bool isAuthorized = whitelistedSteamIds.Contains(playerSteamId64);
+            
+            if (!isAuthorized)
+            {
+                // Protection contre les reconnexions rapides
+                lock (kickLock)
+                {
+                    if (recentlyKickedPlayers.Contains(playerSteamId64))
+                    {
+                        return; // Déjà traité
+                    }
+                    recentlyKickedPlayers.Add(playerSteamId64);
+                }
+                
+                // Kick rapide et simple
+                try
+                {
+                    Server.ExecuteCommand($"kick \"{playerName}\" \"Accès non autorisé\"");
+                    Console.WriteLine($"[KICK] {playerName} (SteamID: {playerSteamId64}) - Non autorisé");
+                }
+                catch
+                {
+                    // Fallback silencieux
+                    try { Server.ExecuteCommand($"kickid {player.UserId} \"Accès non autorisé\""); } catch { }
+                }
+                
+                // Nettoyer après 5 secondes
+                Task.Delay(5000).ContinueWith(_ =>
+                {
+                    lock (kickLock) { recentlyKickedPlayers.Remove(playerSteamId64); }
+                });
+            }
+            else
+            {
+                Console.WriteLine($"[AUTH] {playerName} autorisé");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Erreur authorization: {ex.Message}");
+        }
     }
     
     private void CheckPlayerAuthorization(CCSPlayerController player)
