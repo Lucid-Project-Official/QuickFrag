@@ -1,8 +1,27 @@
 {
   "version": 2,
-  "dgSpecHash": "RaX/NTxFi5A=",
-  "success": true,
+  "dgSpecHash": "YcnMhD4qdh0=",
+  "success": false,
   "projectFilePath": "C:\\Users\\Kestas\\Documents\\QuickFrag\\QuickFrag\\HelloWorldPluginCS2\\HelloWorldPluginCS2.csproj",
   "expectedPackageFiles": [],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "Impossible de résoudre 'Newtonsoft.Json (>= 13.0.3)' pour 'net8.0'.",
+      "libraryId": "Newtonsoft.Json",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "Impossible de résoudre 'System.Net.Http (>= 4.3.4)' pour 'net8.0'.",
+      "libraryId": "System.Net.Http",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    }
+  ]
 }

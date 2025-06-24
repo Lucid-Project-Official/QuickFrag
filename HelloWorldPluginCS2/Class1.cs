@@ -4,9 +4,8 @@ using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Commands;
 using CounterStrikeSharp.API.Modules.Cvars;
 using CounterStrikeSharp.API.Modules.Events;
-using Newtonsoft.Json;
+using System.Text.Json;
 using System.Net.Http;
-using System.Text;
 
 namespace HelloWorldPluginCS2;
 
@@ -47,7 +46,7 @@ public class WhitelistPlugin : BasePlugin
         {
             // Récupérer l'IP et le port du serveur
             var hostName = ConVar.Find("hostname")?.StringValue ?? "Unknown";
-            var serverPort = ConVar.Find("hostport")?.GetPrimitiveValue<int>() ?? 27015;
+            var serverPort = ConVar.Find("hostport")?.GetPrimitiveValue<int>() ?? 27016;
             
             // Pour l'IP, nous devons utiliser une méthode alternative car CS2 ne donne pas directement l'IP publique
             // Ici, nous utiliserons l'IP locale et le port pour l'exemple
@@ -60,7 +59,7 @@ public class WhitelistPlugin : BasePlugin
         catch (Exception ex)
         {
             Console.WriteLine($"Erreur lors de la détection de l'adresse du serveur : {ex.Message}");
-            serverAddress = "127.0.0.1:27015"; // Valeur par défaut
+            serverAddress = "57.130.20.184:27016"; // Valeur par défaut
         }
     }
 
@@ -86,21 +85,23 @@ public class WhitelistPlugin : BasePlugin
             if (response.IsSuccessStatusCode)
             {
                 string jsonResponse = await response.Content.ReadAsStringAsync();
-                var serverData = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(jsonResponse);
+                
+                using JsonDocument document = JsonDocument.Parse(jsonResponse);
+                var serverDataArray = document.RootElement;
 
                 whitelistedSteamIds.Clear();
 
-                if (serverData != null && serverData.Count > 0)
+                if (serverDataArray.GetArrayLength() > 0)
                 {
-                    var server = serverData[0];
+                    var server = serverDataArray[0];
                     
                     // Extraire tous les SteamIDs des colonnes match_playersteam_1 à match_playersteam_10
                     for (int i = 1; i <= 10; i++)
                     {
                         string columnName = $"match_playersteam_{i}";
-                        if (server.ContainsKey(columnName) && server[columnName] != null)
+                        if (server.TryGetProperty(columnName, out JsonElement steamIdElement))
                         {
-                            string steamId = server[columnName].ToString()?.Trim();
+                            string? steamId = steamIdElement.GetString()?.Trim();
                             if (!string.IsNullOrEmpty(steamId) && steamId != "null")
                             {
                                 whitelistedSteamIds.Add(steamId);

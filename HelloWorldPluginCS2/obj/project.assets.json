@@ -5,7 +5,10 @@
   },
   "libraries": {},
   "projectFileDependencyGroups": {
-    "net8.0": []
+    "net8.0": [
+      "Newtonsoft.Json >= 13.0.3",
+      "System.Net.Http >= 4.3.4"
+    ]
   },
   "packageFolders": {
     "C:\\Users\\Kestas\\.nuget\\packages\\": {}
@@ -45,6 +48,16 @@
     "frameworks": {
       "net8.0": {
         "targetAlias": "net8.0",
+        "dependencies": {
+          "Newtonsoft.Json": {
+            "target": "Package",
+            "version": "[13.0.3, )"
+          },
+          "System.Net.Http": {
+            "target": "Package",
+            "version": "[4.3.4, )"
+          }
+        },
         "imports": [
           "net461",
           "net462",
@@ -64,5 +77,25 @@
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.411/PortableRuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "Impossible de résoudre 'Newtonsoft.Json (>= 13.0.3)' pour 'net8.0'.",
+      "libraryId": "Newtonsoft.Json",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    },
+    {
+      "code": "NU1100",
+      "level": "Error",
+      "message": "Impossible de résoudre 'System.Net.Http (>= 4.3.4)' pour 'net8.0'.",
+      "libraryId": "System.Net.Http",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    }
+  ]
 }
