@@ -71,39 +71,56 @@ public class WhitelistPlugin : BasePlugin
     {
         try
         {
+            Console.WriteLine("[DEBUG] Début de LoadWhitelistFromDatabase()");
+            
             if (httpClient == null)
             {
-                Console.WriteLine("HttpClient non initialisé");
+                Console.WriteLine("[ERROR] HttpClient non initialisé");
                 return;
             }
 
             if (string.IsNullOrEmpty(serverAddress))
             {
-                Console.WriteLine("Adresse du serveur non disponible pour la recherche en base de données");
+                Console.WriteLine("[ERROR] Adresse du serveur non disponible pour la recherche en base de données");
                 return;
             }
 
+            Console.WriteLine($"[DEBUG] Recherche pour le serveur : {serverAddress}");
+
             // Construire l'URL de l'API Supabase pour récupérer les données du serveur
             string url = $"{SUPABASE_URL}/rest/v1/{TABLE_NAME}?server_IPAdress=eq.{serverAddress}&select=match_playersteam_1,match_playersteam_2,match_playersteam_3,match_playersteam_4,match_playersteam_5,match_playersteam_6,match_playersteam_7,match_playersteam_8,match_playersteam_9,match_playersteam_10";
+
+            Console.WriteLine($"[DEBUG] URL construite : {url}");
+            Console.WriteLine($"[DEBUG] URL Supabase : {SUPABASE_URL}");
+            Console.WriteLine($"[DEBUG] Table : {TABLE_NAME}");
 
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("apikey", SUPABASE_ANON_KEY);
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {SUPABASE_ANON_KEY}");
 
+            Console.WriteLine("[DEBUG] Headers ajoutés, envoi de la requête...");
+
             HttpResponseMessage response = await httpClient.GetAsync(url);
             
+            Console.WriteLine($"[DEBUG] Réponse reçue - Status Code: {response.StatusCode}");
+            Console.WriteLine($"[DEBUG] Reason Phrase: {response.ReasonPhrase}");
+
             if (response.IsSuccessStatusCode)
             {
                 string jsonResponse = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[DEBUG] Réponse JSON reçue : {jsonResponse}");
                 
                 using JsonDocument document = JsonDocument.Parse(jsonResponse);
                 var serverDataArray = document.RootElement;
+
+                Console.WriteLine($"[DEBUG] Nombre d'éléments dans la réponse : {serverDataArray.GetArrayLength()}");
 
                 whitelistedSteamIds.Clear();
 
                 if (serverDataArray.GetArrayLength() > 0)
                 {
                     var server = serverDataArray[0];
+                    Console.WriteLine("[DEBUG] Traitement du premier serveur trouvé");
                     
                     // Extraire tous les SteamIDs des colonnes match_playersteam_1 à match_playersteam_10
                     for (int i = 1; i <= 10; i++)
@@ -115,26 +132,32 @@ public class WhitelistPlugin : BasePlugin
                             if (!string.IsNullOrEmpty(steamId) && steamId != "null")
                             {
                                 whitelistedSteamIds.Add(steamId);
+                                Console.WriteLine($"[DEBUG] SteamID ajouté : {steamId} (colonne {columnName})");
                             }
                         }
                     }
 
-                    Console.WriteLine($"Whitelist chargée : {whitelistedSteamIds.Count} joueurs autorisés");
+                    Console.WriteLine($"[SUCCESS] Whitelist chargée : {whitelistedSteamIds.Count} joueurs autorisés");
                     Server.PrintToConsole($"Whitelist mise à jour : {whitelistedSteamIds.Count} joueurs autorisés pour ce serveur");
                 }
                 else
                 {
-                    Console.WriteLine($"Aucune configuration trouvée pour le serveur {serverAddress}");
+                    Console.WriteLine($"[WARNING] Aucune configuration trouvée pour le serveur {serverAddress}");
                 }
             }
             else
             {
-                Console.WriteLine($"Erreur lors de la récupération des données : {response.StatusCode}");
+                string errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[ERROR] Erreur lors de la récupération des données");
+                Console.WriteLine($"[ERROR] Status Code: {response.StatusCode}");
+                Console.WriteLine($"[ERROR] Reason Phrase: {response.ReasonPhrase}");
+                Console.WriteLine($"[ERROR] Contenu de l'erreur: {errorContent}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur lors du chargement de la whitelist : {ex.Message}");
+            Console.WriteLine($"[EXCEPTION] Erreur lors du chargement de la whitelist : {ex.Message}");
+            Console.WriteLine($"[EXCEPTION] Stack Trace : {ex.StackTrace}");
         }
     }
 
