@@ -138,7 +138,13 @@ public class WhitelistPlugin : BasePlugin
                     }
 
                     Console.WriteLine($"[SUCCESS] Whitelist chargée : {whitelistedSteamIds.Count} joueurs autorisés");
-                    Server.PrintToConsole($"Whitelist mise à jour : {whitelistedSteamIds.Count} joueurs autorisés pour ce serveur");
+                    
+                    // Utiliser Server.NextFrame pour exécuter sur le thread principal
+                    int count = whitelistedSteamIds.Count;
+                    Server.NextFrame(() =>
+                    {
+                        Server.PrintToConsole($"Whitelist mise à jour : {count} joueurs autorisés pour ce serveur");
+                    });
                 }
                 else
                 {
