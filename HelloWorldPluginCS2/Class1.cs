@@ -29,12 +29,19 @@ public class WhitelistPlugin : BasePlugin
 
     public override void Load(bool hotReload)
     {
-        Console.WriteLine("Plugin QuickFrag Whitelist chargé !");
-        Server.PrintToConsole("Plugin de whitelist dynamique actif !");
+        Console.WriteLine("=== PLUGIN QUICKFRAG WHITELIST DÉMARRAGE ===");
+        Console.WriteLine($"Version: {ModuleVersion}");
+        Console.WriteLine($"Auteur: {ModuleAuthor}");
+        
+        Server.NextFrame(() =>
+        {
+            Server.PrintToConsole("=== Plugin QuickFrag Whitelist chargé avec succès ===");
+        });
         
         // Initialiser HttpClient
         httpClient = new HttpClient();
         httpClient.Timeout = TimeSpan.FromSeconds(30);
+        Console.WriteLine("[INIT] HttpClient initialisé");
         
         // Obtenir l'adresse du serveur
         GetServerAddress();
@@ -44,6 +51,9 @@ public class WhitelistPlugin : BasePlugin
         
         // Enregistrer les événements
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
+        Console.WriteLine("[INIT] Événement PlayerConnectFull enregistré");
+        
+        Console.WriteLine("=== PLUGIN QUICKFRAG WHITELIST PRÊT ===");
     }
 
     private void GetServerAddress()
@@ -230,8 +240,42 @@ public class WhitelistPlugin : BasePlugin
                          if (player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
                          {
                              Console.WriteLine($"[INFO] Execution du kick pour {player.PlayerName}");
-                             Server.ExecuteCommand($"kickid {player.UserId} \"Vous ne pouvez pas rejoindre ce match.\"");
-                             Console.WriteLine($"[SUCCESS] Joueur {player.PlayerName} (SteamID: {playerSteamId64}) exclu - non autorisé");
+                             
+                             // Essayer différentes méthodes de kick
+                             try
+                             {
+                                 // Méthode 1: Kick par nom (plus fiable)
+                                 Server.ExecuteCommand($"kick \"{player.PlayerName}\" \"Vous ne pouvez pas rejoindre ce match.\"");
+                                 Console.WriteLine($"[SUCCESS] Kick par nom exécuté pour {player.PlayerName}");
+                             }
+                             catch (Exception kickNameEx)
+                             {
+                                 Console.WriteLine($"[WARNING] Kick par nom échoué: {kickNameEx.Message}");
+                                 
+                                 try
+                                 {
+                                     // Méthode 2: Kick par UserID (fallback)
+                                     Server.ExecuteCommand($"kickid {player.UserId} \"Vous ne pouvez pas rejoindre ce match.\"");
+                                     Console.WriteLine($"[SUCCESS] Kick par UserID exécuté pour {player.PlayerName}");
+                                 }
+                                 catch (Exception kickIdEx)
+                                 {
+                                     Console.WriteLine($"[ERROR] Kick par UserID échoué: {kickIdEx.Message}");
+                                     
+                                     try
+                                     {
+                                         // Méthode 3: Déconnexion directe (dernier recours)
+                                         player.Disconnect();
+                                         Console.WriteLine($"[SUCCESS] Déconnexion directe exécutée pour {player.PlayerName}");
+                                     }
+                                     catch (Exception disconnectEx)
+                                     {
+                                         Console.WriteLine($"[ERROR] Déconnexion directe échouée: {disconnectEx.Message}");
+                                     }
+                                 }
+                             }
+                             
+                             Console.WriteLine($"[SUCCESS] Joueur {player.PlayerName} (SteamID: {playerSteamId64}) traité - non autorisé");
                              
                              // Nettoyer après 10 secondes
                              Task.Delay(10000).ContinueWith(_ =>
