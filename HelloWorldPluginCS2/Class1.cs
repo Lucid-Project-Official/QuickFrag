@@ -280,7 +280,7 @@ public class WhitelistPlugin : BasePlugin
                      if (recentlyKickedPlayers.Contains(playerSteamId64))
                      {
                          Console.WriteLine($"[WARNING] Joueur {player.PlayerName} déjà récemment kické - ignoré pour éviter le crash");
-                         return HookResult.Continue;
+                         return;
                      }
                      
                      recentlyKickedPlayers.Add(playerSteamId64);
