@@ -22,6 +22,8 @@ public class WhitelistPlugin : BasePlugin
     private readonly HashSet<string> recentlyKickedPlayers = new HashSet<string>();
     private readonly object kickLock = new object();
     private bool whitelistEnabled = true;
+    private DateTime lastWhitelistReload = DateTime.MinValue;
+    private bool isReloadingWhitelist = false;
     
     // Configuration Supabase - À MODIFIER avec vos vraies valeurs
     private const string SUPABASE_URL = "https://ifivxzwkkhwdbblgsbyo.supabase.co";
@@ -30,243 +32,116 @@ public class WhitelistPlugin : BasePlugin
 
     public override void Load(bool hotReload)
     {
-        Console.WriteLine("=== PLUGIN QUICKFRAG WHITELIST DÉMARRAGE ===");
-        Console.WriteLine($"Version: {ModuleVersion}");
-        Console.WriteLine($"Auteur: {ModuleAuthor}");
+        Console.WriteLine("[PLUGIN] QuickFrag Whitelist v" + ModuleVersion + " - Démarrage");
         
-        Server.NextFrame(() =>
-        {
-            Server.PrintToConsole("=== Plugin QuickFrag Whitelist chargé avec succès ===");
-        });
-        
-        // Initialiser HttpClient
         httpClient = new HttpClient();
         httpClient.Timeout = TimeSpan.FromSeconds(30);
-        Console.WriteLine("[INIT] HttpClient initialisé");
         
-        // Obtenir l'adresse du serveur
         GetServerAddress();
         
-        // Charger la whitelist depuis Supabase avec délai pour s'assurer que le serveur est prêt
-        Console.WriteLine("[INIT] Programmation du chargement de la whitelist dans 5 secondes...");
-        Task.Delay(5000).ContinueWith(_ => 
+        Task.Delay(3000).ContinueWith(_ => 
         {
-            Console.WriteLine("[INIT] Début du chargement initial de la whitelist...");
             _ = LoadWhitelistFromDatabase();
         });
         
-        // Programmer un rechargement automatique toutes les 30 secondes
-        Console.WriteLine("[INIT] Programmation du rechargement automatique toutes les 30 secondes...");
-        StartPeriodicWhitelistReload();
-        
-        // Enregistrer les événements
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
-        Console.WriteLine("[INIT] Événement PlayerConnectFull enregistré");
         
-        Console.WriteLine("=== PLUGIN QUICKFRAG WHITELIST PRÊT ===");
+        Console.WriteLine("[PLUGIN] QuickFrag Whitelist prêt");
     }
 
-    private void StartPeriodicWhitelistReload()
-    {
-        Task.Run(async () =>
-        {
-            while (true)
-            {
-                try
-                {
-                    await Task.Delay(30000); // Attendre 30 secondes
-                    
-                    // Recharger seulement si le serveur n'est pas trop chargé
-                    Console.WriteLine("[PERIODIC] Rechargement automatique...");
-                    await LoadWhitelistFromDatabase();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[PERIODIC] Erreur: {ex.Message}");
-                    // En cas d'erreur, attendre plus longtemps avant de réessayer
-                    await Task.Delay(60000);
-                }
-            }
-        });
-    }
+
 
     private void GetServerAddress()
     {
         try
         {
-            Console.WriteLine("[PORT] Diagnostic des variables de port du serveur CS2:");
-            
-            // Tester différentes variables de port
             var hostPort = ConVar.Find("hostport");
             var port = ConVar.Find("port");
-            var ip = ConVar.Find("ip");
             var netPort = ConVar.Find("net_port");
-            var hostName = ConVar.Find("hostname");
             
-            Console.WriteLine($"[PORT] hostname: {hostName?.StringValue ?? "NULL"}");
-            Console.WriteLine($"[PORT] hostport: {hostPort?.GetPrimitiveValue<int>() ?? -1} (existe: {hostPort != null})");
-            Console.WriteLine($"[PORT] port: {port?.GetPrimitiveValue<int>() ?? -1} (existe: {port != null})");
-            Console.WriteLine($"[PORT] ip: {ip?.StringValue ?? "NULL"}");
-            Console.WriteLine($"[PORT] net_port: {netPort?.GetPrimitiveValue<int>() ?? -1} (existe: {netPort != null})");
-            
-            // Essayer de récupérer le bon port
             int serverPort = 27016; // Port par défaut
             
-            // Prioriser les variables dans l'ordre de fiabilité
             if (hostPort != null)
-            {
                 serverPort = hostPort.GetPrimitiveValue<int>();
-                Console.WriteLine($"[PORT] Utilisation de hostport: {serverPort}");
-            }
             else if (port != null)
-            {
                 serverPort = port.GetPrimitiveValue<int>();
-                Console.WriteLine($"[PORT] Utilisation de port: {serverPort}");
-            }
             else if (netPort != null)
-            {
                 serverPort = netPort.GetPrimitiveValue<int>();
-                Console.WriteLine($"[PORT] Utilisation de net_port: {serverPort}");
-            }
-            else
-            {
-                Console.WriteLine($"[PORT] Aucune variable trouvée, utilisation du port par défaut: {serverPort}");
-            }
             
-            // Si le port détecté est 27015, forcer 27016 selon votre configuration
+            // Si le port détecté est 27015, forcer 27016
             if (serverPort == 27015)
-            {
-                Console.WriteLine("[PORT] Port 27015 détecté, mais serveur configuré pour 27016 - correction appliquée");
                 serverPort = 27016;
-            }
             
-            // Pour l'IP, nous devons utiliser une méthode alternative car CS2 ne donne pas directement l'IP publique
-            string serverIp = "57.130.20.184"; // IP configurée manuellement
-            
+            string serverIp = "57.130.20.184";
             serverAddress = $"{serverIp}:{serverPort}";
-            Console.WriteLine($"[PORT] Adresse finale du serveur : {serverAddress}");
+            Console.WriteLine($"[CONFIG] Serveur: {serverAddress}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Erreur lors de la détection de l'adresse du serveur : {ex.Message}");
-            serverAddress = "57.130.20.184:27016"; // Valeur par défaut sécurisée
-            Console.WriteLine($"[PORT] Utilisation de l'adresse par défaut : {serverAddress}");
+            Console.WriteLine($"[ERROR] Port: {ex.Message}");
+            serverAddress = "57.130.20.184:27016";
+            Console.WriteLine($"[CONFIG] Serveur par défaut: {serverAddress}");
         }
     }
 
     private async Task LoadWhitelistFromDatabase()
     {
-        Console.WriteLine("======== DÉBUT LOADWHITELISTFROMDATABASE ========");
-        Console.WriteLine($"[TIMESTAMP] {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        
         try
         {
-            Console.WriteLine("[DEBUG] Début de LoadWhitelistFromDatabase()");
-            
-            if (httpClient == null)
+            if (httpClient == null || string.IsNullOrEmpty(serverAddress))
             {
-                Console.WriteLine("[ERROR] HttpClient non initialisé");
+                Console.WriteLine("[ERROR] Configuration manquante");
                 return;
             }
 
-            if (string.IsNullOrEmpty(serverAddress))
-            {
-                Console.WriteLine("[ERROR] Adresse du serveur non disponible pour la recherche en base de données");
-                return;
-            }
-
-            Console.WriteLine($"[DEBUG] Recherche pour le serveur : {serverAddress}");
-
-            // Construire l'URL de l'API Supabase pour récupérer les données du serveur
             string url = $"{SUPABASE_URL}/rest/v1/{TABLE_NAME}?server_IPAdress=eq.{serverAddress}&select=match_playersteam_1,match_playersteam_2,match_playersteam_3,match_playersteam_4,match_playersteam_5,match_playersteam_6,match_playersteam_7,match_playersteam_8,match_playersteam_9,match_playersteam_10";
-
-            Console.WriteLine($"[DEBUG] URL construite : {url}");
-            Console.WriteLine($"[DEBUG] URL Supabase : {SUPABASE_URL}");
-            Console.WriteLine($"[DEBUG] Table : {TABLE_NAME}");
 
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("apikey", SUPABASE_ANON_KEY);
             httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {SUPABASE_ANON_KEY}");
 
-            Console.WriteLine("[DEBUG] Headers ajoutés, envoi de la requête...");
-
             HttpResponseMessage response = await httpClient.GetAsync(url);
             
-            Console.WriteLine($"[DEBUG] Réponse reçue - Status Code: {response.StatusCode}");
-            Console.WriteLine($"[DEBUG] Reason Phrase: {response.ReasonPhrase}");
-
             if (response.IsSuccessStatusCode)
             {
                 string jsonResponse = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"[DEBUG] Réponse JSON reçue : {jsonResponse}");
-                
                 using JsonDocument document = JsonDocument.Parse(jsonResponse);
                 var serverDataArray = document.RootElement;
-
-                Console.WriteLine($"[DEBUG] Nombre d'éléments dans la réponse : {serverDataArray.GetArrayLength()}");
 
                 whitelistedSteamIds.Clear();
 
                 if (serverDataArray.GetArrayLength() > 0)
                 {
                     var server = serverDataArray[0];
-                    Console.WriteLine("[DEBUG] Traitement du premier serveur trouvé");
                     
-                    // Extraire tous les SteamIDs des colonnes match_playersteam_1 à match_playersteam_10
                     for (int i = 1; i <= 10; i++)
                     {
                         string columnName = $"match_playersteam_{i}";
                         if (server.TryGetProperty(columnName, out JsonElement steamIdElement))
                         {
                             string? steamId = steamIdElement.GetString()?.Trim();
-                            if (!string.IsNullOrEmpty(steamId) && steamId != "null")
+                            if (!string.IsNullOrEmpty(steamId) && steamId != "null" && !whitelistedSteamIds.Contains(steamId))
                             {
-                                // Vérifier si le SteamID existe déjà pour éviter les doublons
-                                if (!whitelistedSteamIds.Contains(steamId))
-                                {
-                                    whitelistedSteamIds.Add(steamId);
-                                    Console.WriteLine($"[DEBUG] SteamID ajouté : {steamId} (colonne {columnName})");
-                                }
-                                else
-                                {
-                                    Console.WriteLine($"[WARNING] SteamID déjà présent : {steamId} (colonne {columnName}) - ignoré");
-                                }
+                                whitelistedSteamIds.Add(steamId);
                             }
                         }
                     }
 
-                    Console.WriteLine($"[SUCCESS] Whitelist chargée : {whitelistedSteamIds.Count} joueurs autorisés");
-                    
-                    // Utiliser Server.NextFrame pour exécuter sur le thread principal
-                    int count = whitelistedSteamIds.Count;
-                    Server.NextFrame(() =>
-                    {
-                        Server.PrintToConsole($"Whitelist mise à jour : {count} joueurs autorisés pour ce serveur");
-                    });
+                    Console.WriteLine($"[WHITELIST] {whitelistedSteamIds.Count} joueurs autorisés");
                 }
                 else
                 {
-                    Console.WriteLine($"[WARNING] Aucune configuration trouvée pour le serveur {serverAddress}");
+                    Console.WriteLine("[WHITELIST] Aucune configuration trouvée");
                 }
             }
             else
             {
-                string errorContent = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"[ERROR] Erreur lors de la récupération des données");
-                Console.WriteLine($"[ERROR] Status Code: {response.StatusCode}");
-                Console.WriteLine($"[ERROR] Reason Phrase: {response.ReasonPhrase}");
-                Console.WriteLine($"[ERROR] Contenu de l'erreur: {errorContent}");
+                Console.WriteLine($"[ERROR] Supabase: {response.StatusCode}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[EXCEPTION] Erreur lors du chargement de la whitelist : {ex.Message}");
-            Console.WriteLine($"[EXCEPTION] Stack Trace : {ex.StackTrace}");
-        }
-        finally
-        {
-            Console.WriteLine($"[FINAL] Whitelist finale: {whitelistedSteamIds.Count} entrées");
-            Console.WriteLine("======== FIN LOADWHITELISTFROMDATABASE ========");
+            Console.WriteLine($"[ERROR] Chargement whitelist: {ex.Message}");
         }
     }
 
@@ -279,9 +154,31 @@ public class WhitelistPlugin : BasePlugin
             if (player == null || !player.IsValid)
                 return HookResult.Continue;
 
-            // APPROCHE SIMPLIFIÉE: Vérification immédiate avec les données en cache
-            // Pas de rechargement à la connexion pour éviter l'overflow réseau
-            
+            // Recharger la whitelist si ça fait plus de 10 secondes
+            bool shouldReload = false;
+            if (!isReloadingWhitelist && (DateTime.Now - lastWhitelistReload).TotalSeconds > 10)
+            {
+                shouldReload = true;
+                isReloadingWhitelist = true;
+            }
+
+            if (shouldReload)
+            {
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await LoadWhitelistFromDatabase();
+                        lastWhitelistReload = DateTime.Now;
+                    }
+                    finally
+                    {
+                        isReloadingWhitelist = false;
+                    }
+                });
+            }
+
+            // Vérifier l'autorisation
             Server.NextFrame(() =>
             {
                 try
@@ -293,13 +190,13 @@ public class WhitelistPlugin : BasePlugin
                 }
                 catch (Exception checkEx)
                 {
-                    Console.WriteLine($"[ERROR] Erreur lors de la vérification: {checkEx.Message}");
+                    Console.WriteLine($"[ERROR] {checkEx.Message}");
                 }
             });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[CRITICAL] Erreur dans OnPlayerConnectFull: {ex.Message}");
+            Console.WriteLine($"[ERROR] OnPlayerConnect: {ex.Message}");
         }
 
         return HookResult.Continue;
@@ -309,250 +206,91 @@ public class WhitelistPlugin : BasePlugin
     {
         try
         {
-            // Si la whitelist est désactivée, autoriser tout le monde
-            if (!whitelistEnabled)
-            {
-                return;
-            }
+            if (!whitelistEnabled) return;
             
             string playerSteamId64 = player.SteamID.ToString();
             string playerName = player.PlayerName ?? "Unknown";
             
-            // Si pas de données de whitelist, autoriser par sécurité (éviter de kicker tout le monde)
-            if (whitelistedSteamIds.Count == 0)
-            {
-                Console.WriteLine($"[WARNING] Whitelist vide - {playerName} autorisé par défaut");
-                return;
-            }
+            // Si pas de whitelist, autoriser par sécurité
+            if (whitelistedSteamIds.Count == 0) return;
             
             bool isAuthorized = whitelistedSteamIds.Contains(playerSteamId64);
             
             if (!isAuthorized)
             {
-                // Protection contre les reconnexions rapides
                 lock (kickLock)
                 {
-                    if (recentlyKickedPlayers.Contains(playerSteamId64))
-                    {
-                        return; // Déjà traité
-                    }
+                    if (recentlyKickedPlayers.Contains(playerSteamId64)) return;
                     recentlyKickedPlayers.Add(playerSteamId64);
                 }
                 
-                // DÉLÉGUER LE KICK À UN THREAD SÉPARÉ pour éviter de bloquer le serveur
+                Console.WriteLine($"[KICK] {playerName} - Non autorisé");
+                
                 Task.Run(() =>
                 {
-                    try
+                    Thread.Sleep(100);
+                    Server.NextFrame(() =>
                     {
-                        // Attendre un petit délai pour éviter les conflits de timing
-                        Thread.Sleep(100);
-                        
-                        Server.NextFrame(() =>
+                        try
                         {
-                            try
+                            if (player != null && player.IsValid)
                             {
-                                if (player != null && player.IsValid)
-                                {
-                                    Server.ExecuteCommand($"kick \"{playerName}\" \"Accès non autorisé\"");
-                                    Console.WriteLine($"[KICK] {playerName} - Non autorisé");
-                                }
+                                Server.ExecuteCommand($"kick \"{playerName}\" \"Accès non autorisé\"");
                             }
-                            catch (Exception kickEx)
-                            {
-                                Console.WriteLine($"[KICK_ERROR] {kickEx.Message}");
-                            }
-                        });
-                    }
-                    catch (Exception taskEx)
-                    {
-                        Console.WriteLine($"[TASK_ERROR] {taskEx.Message}");
-                    }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[ERROR] Kick: {ex.Message}");
+                        }
+                    });
                 });
                 
-                // Nettoyer après 10 secondes
                 Task.Delay(10000).ContinueWith(_ =>
                 {
                     lock (kickLock) { recentlyKickedPlayers.Remove(playerSteamId64); }
                 });
             }
-            else
-            {
-                // Log minimal pour éviter le spam
-                if (whitelistedSteamIds.Count > 0) // Seulement si on a des données
-                {
-                    Console.WriteLine($"[AUTH] {playerName} autorisé");
-                }
-            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Auth error: {ex.Message}");
+            Console.WriteLine($"[ERROR] Auth: {ex.Message}");
         }
     }
-    
-    private void CheckPlayerAuthorization(CCSPlayerController player)
-    {
-        try
-        {
-            // Récupérer différents formats de SteamID pour diagnostiquer
-            string playerSteamId64 = player.SteamID.ToString();
-            string playerAuthId = player.AuthorizedSteamID?.SteamId64.ToString() ?? "N/A";
-            
-            Console.WriteLine($"[AUTH] Vérification d'autorisation pour: {player.PlayerName}");
-            Console.WriteLine($"[AUTH] SteamID (player.SteamID): {playerSteamId64}");
-            Console.WriteLine($"[AUTH] AuthorizedSteamID: {playerAuthId}");
-            Console.WriteLine($"[AUTH] Whitelist contient {whitelistedSteamIds.Count} entrées:");
-            
-            foreach (var whitelistedId in whitelistedSteamIds)
-            {
-                Console.WriteLine($"[AUTH] - Whitelist: '{whitelistedId}'");
-            }
-            
-            // Tenter les différents formats pour la comparaison
-            bool isAuthorized = whitelistedSteamIds.Contains(playerSteamId64) || 
-                               whitelistedSteamIds.Contains(playerAuthId);
-            
-            Console.WriteLine($"[AUTH] Résultat autorisation: {isAuthorized}");
-            
-                         if (!isAuthorized)
-             {
-                 // Protection contre les reconnexions rapides
-                 lock (kickLock)
-                 {
-                     if (recentlyKickedPlayers.Contains(playerSteamId64))
-                     {
-                         Console.WriteLine($"[WARNING] Joueur {player.PlayerName} déjà récemment kické - ignoré pour éviter le crash");
-                         return;
-                     }
-                     
-                     recentlyKickedPlayers.Add(playerSteamId64);
-                 }
-                 
-                 Console.WriteLine($"[INFO] Joueur {player.PlayerName} non autorisé - préparation du kick");
-                 
-                 // Le joueur n'est pas autorisé, le kicker avec une approche plus sûre
-                 Server.NextFrame(() =>
-                 {
-                     try
-                     {
-                         if (player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
-                         {
-                             Console.WriteLine($"[INFO] Execution du kick pour {player.PlayerName}");
-                             
-                             // Essayer différentes méthodes de kick
-                             try
-                             {
-                                 // Méthode 1: Kick par nom (plus fiable)
-                                 Server.ExecuteCommand($"kick \"{player.PlayerName}\" \"Vous ne pouvez pas rejoindre ce match.\"");
-                                 Console.WriteLine($"[SUCCESS] Kick par nom exécuté pour {player.PlayerName}");
-                             }
-                             catch (Exception kickNameEx)
-                             {
-                                 Console.WriteLine($"[WARNING] Kick par nom échoué: {kickNameEx.Message}");
-                                 
-                                 try
-                                 {
-                                     // Méthode 2: Kick par UserID (fallback)
-                                     Server.ExecuteCommand($"kickid {player.UserId} \"Vous ne pouvez pas rejoindre ce match.\"");
-                                     Console.WriteLine($"[SUCCESS] Kick par UserID exécuté pour {player.PlayerName}");
-                                 }
-                                                                   catch (Exception kickIdEx)
-                                  {
-                                      Console.WriteLine($"[ERROR] Kick par UserID échoué: {kickIdEx.Message}");
-                                      Console.WriteLine($"[WARNING] Toutes les méthodes de kick ont échoué pour {player.PlayerName}");
-                                  }
-                             }
-                             
-                             Console.WriteLine($"[SUCCESS] Joueur {player.PlayerName} (SteamID: {playerSteamId64}) traité - non autorisé");
-                             
-                             // Nettoyer après 10 secondes
-                             Task.Delay(10000).ContinueWith(_ =>
-                             {
-                                 lock (kickLock)
-                                 {
-                                     recentlyKickedPlayers.Remove(playerSteamId64);
-                                 }
-                             });
-                         }
-                         else
-                         {
-                             Console.WriteLine($"[WARNING] Impossible de kicker - joueur déjà déconnecté");
-                             lock (kickLock)
-                             {
-                                 recentlyKickedPlayers.Remove(playerSteamId64);
-                             }
-                         }
-                     }
-                     catch (Exception kickEx)
-                     {
-                         Console.WriteLine($"[ERROR] Erreur lors du kick: {kickEx.Message}");
-                         lock (kickLock)
-                         {
-                             recentlyKickedPlayers.Remove(playerSteamId64);
-                         }
-                     }
-                 });
-             }
-            else
-            {
-                Console.WriteLine($"[SUCCESS] Joueur {player.PlayerName} (SteamID: {playerSteamId64}) autorisé à rejoindre");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[CRITICAL] Erreur dans CheckPlayerAuthorization: {ex.Message}");
-            Console.WriteLine($"[CRITICAL] Stack trace: {ex.StackTrace}");
-        }
-    }
+
 
     // Commande pour recharger la whitelist manuellement
     [ConsoleCommand("css_reload_whitelist", "Recharge la whitelist depuis la base de données")]
     [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
     public void OnReloadWhitelistCommand(CCSPlayerController? player, CommandInfo commandInfo)
     {
-        Console.WriteLine("[MANUAL] Rechargement manuel de la whitelist demandé");
         _ = LoadWhitelistFromDatabase();
-        commandInfo.ReplyToCommand("Rechargement de la whitelist en cours...");
+        commandInfo.ReplyToCommand("Rechargement en cours...");
     }
 
-    // Commande pour afficher le statut de la whitelist
     [ConsoleCommand("css_whitelist_status", "Affiche le statut de la whitelist")]
     [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
     public void OnWhitelistStatusCommand(CCSPlayerController? player, CommandInfo commandInfo)
     {
-        Console.WriteLine($"[STATUS] Adresse du serveur: {serverAddress}");
-        Console.WriteLine($"[STATUS] Nombre de joueurs autorisés: {whitelistedSteamIds.Count}");
-        Console.WriteLine($"[STATUS] Liste des SteamIDs autorisés:");
-        
-        if (whitelistedSteamIds.Count == 0)
-        {
-            Console.WriteLine("[STATUS] - Aucun joueur autorisé (WHITELIST VIDE!)");
-        }
-        else
-        {
-            foreach (var steamId in whitelistedSteamIds)
-            {
-                Console.WriteLine($"[STATUS] - {steamId}");
-            }
-        }
+        Console.WriteLine($"[STATUS] Serveur: {serverAddress}");
+        Console.WriteLine($"[STATUS] Joueurs autorisés: {whitelistedSteamIds.Count}");
+        Console.WriteLine($"[STATUS] État: {(whitelistEnabled ? "ACTIVÉE" : "DÉSACTIVÉE")}");
         
         commandInfo.ReplyToCommand($"Whitelist: {whitelistedSteamIds.Count} joueurs autorisés");
     }
 
-    // Commande pour désactiver/activer la whitelist
     [ConsoleCommand("css_whitelist_toggle", "Active/désactive la whitelist")]
     [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
     public void OnWhitelistToggleCommand(CCSPlayerController? player, CommandInfo commandInfo)
     {
         whitelistEnabled = !whitelistEnabled;
         string status = whitelistEnabled ? "ACTIVÉE" : "DÉSACTIVÉE";
-        Console.WriteLine($"[TOGGLE] Whitelist {status}");
+        Console.WriteLine($"[CONFIG] Whitelist {status}");
         commandInfo.ReplyToCommand($"Whitelist {status}");
     }
 
     public override void Unload(bool hotReload)
     {
         httpClient?.Dispose();
-        Console.WriteLine("Plugin QuickFrag Whitelist déchargé !");
+        Console.WriteLine("[PLUGIN] QuickFrag Whitelist déchargé");
     }
 }
