@@ -16,7 +16,7 @@ public class WhitelistPlugin : BasePlugin
     public override string ModuleAuthor => "Linoxyr";
     public override string ModuleDescription => "Plugin de whitelist dynamique pour CS2 avec Supabase";
 
-    private static readonly HttpClient httpClient = new HttpClient();
+    private HttpClient? httpClient;
     private string? serverAddress;
     private List<string> whitelistedSteamIds = new List<string>();
     
@@ -29,6 +29,10 @@ public class WhitelistPlugin : BasePlugin
     {
         Console.WriteLine("Plugin QuickFrag Whitelist chargé !");
         Server.PrintToConsole("Plugin de whitelist dynamique actif !");
+        
+        // Initialiser HttpClient
+        httpClient = new HttpClient();
+        httpClient.Timeout = TimeSpan.FromSeconds(30);
         
         // Obtenir l'adresse du serveur
         GetServerAddress();
@@ -67,6 +71,12 @@ public class WhitelistPlugin : BasePlugin
     {
         try
         {
+            if (httpClient == null)
+            {
+                Console.WriteLine("HttpClient non initialisé");
+                return;
+            }
+
             if (string.IsNullOrEmpty(serverAddress))
             {
                 Console.WriteLine("Adresse du serveur non disponible pour la recherche en base de données");
@@ -74,7 +84,7 @@ public class WhitelistPlugin : BasePlugin
             }
 
             // Construire l'URL de l'API Supabase pour récupérer les données du serveur
-            string url = $"{SUPABASE_URL}/rest/v1/{TABLE_NAME}?server_address=eq.{serverAddress}&select=match_playersteam_1,match_playersteam_2,match_playersteam_3,match_playersteam_4,match_playersteam_5,match_playersteam_6,match_playersteam_7,match_playersteam_8,match_playersteam_9,match_playersteam_10";
+            string url = $"{SUPABASE_URL}/rest/v1/{TABLE_NAME}?server_IPAdress=eq.{serverAddress}&select=match_playersteam_1,match_playersteam_2,match_playersteam_3,match_playersteam_4,match_playersteam_5,match_playersteam_6,match_playersteam_7,match_playersteam_8,match_playersteam_9,match_playersteam_10";
 
             httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("apikey", SUPABASE_ANON_KEY);
