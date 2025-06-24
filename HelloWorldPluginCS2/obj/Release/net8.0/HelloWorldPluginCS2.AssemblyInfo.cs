@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HelloWorldPluginCS2")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c4a7298b517e5e2bf3a5d40fbe6dcc110e1a9ce5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c83e4b37059dc0ea3861d8f373efaf14c2e9497d")]
 [assembly: System.Reflection.AssemblyProductAttribute("HelloWorldPluginCS2")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HelloWorldPluginCS2")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -131,8 +131,16 @@ public class WhitelistPlugin : BasePlugin
                             string? steamId = steamIdElement.GetString()?.Trim();
                             if (!string.IsNullOrEmpty(steamId) && steamId != "null")
                             {
-                                whitelistedSteamIds.Add(steamId);
-                                Console.WriteLine($"[DEBUG] SteamID ajouté : {steamId} (colonne {columnName})");
+                                // Vérifier si le SteamID existe déjà pour éviter les doublons
+                                if (!whitelistedSteamIds.Contains(steamId))
+                                {
+                                    whitelistedSteamIds.Add(steamId);
+                                    Console.WriteLine($"[DEBUG] SteamID ajouté : {steamId} (colonne {columnName})");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"[WARNING] SteamID déjà présent : {steamId} (colonne {columnName}) - ignoré");
+                                }
                             }
                         }
                     }

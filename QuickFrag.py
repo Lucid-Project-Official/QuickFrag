@@ -750,6 +750,9 @@ async def on_interaction(interaction: discord.Interaction):
                     ).eq("match_ID", PlayedMatchID).execute()
                     
                     steam_ids_data = {}
+                    # Réinitialiser toutes les colonnes à vide d'abord
+                    for i in range(1, 11):
+                        steam_ids_data[f"match_playersteam_{i}"] = ""
                     
                     if match_players_response.data:
                         match_data = match_players_response.data[0]
@@ -765,11 +768,18 @@ async def on_interaction(interaction: discord.Interaction):
                                 
                                 if player_steam_response.data:
                                     steam_id = player_steam_response.data[0]["Steam_PlayerID"]
-                                    if steam_id:
-                                        steam_ids_data[f"match_playersteam_{i}"] = steam_id
+                                    if steam_id and steam_id.strip():
+                                        steam_ids_data[f"match_playersteam_{i}"] = steam_id.strip()
                                         print(f"[DEBUG] Joueur {i} - Discord ID: {discord_player_id} -> Steam ID: {steam_id}")
+                                    else:
+                                        print(f"[WARNING] SteamID vide pour Discord ID: {discord_player_id}")
+                                        steam_ids_data[f"match_playersteam_{i}"] = ""
                                 else:
                                     print(f"[WARNING] Aucun SteamID trouvé pour Discord ID: {discord_player_id}")
+                                    steam_ids_data[f"match_playersteam_{i}"] = ""
+                            else:
+                                print(f"[DEBUG] Slot {i} vide - pas de joueur")
+                                steam_ids_data[f"match_playersteam_{i}"] = ""
                     
                     # Mise à jour du serveur avec les SteamIDs AVANT le redémarrage
                     server_update_data = {
