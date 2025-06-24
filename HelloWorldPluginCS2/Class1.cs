@@ -22,6 +22,12 @@ public class WhitelistPlugin : BasePlugin
     private readonly HashSet<string> recentlyKickedPlayers = new HashSet<string>();
     private readonly object kickLock = new object();
     
+    // Protection contre les requêtes multiples simultanées
+    private bool isLoadingWhitelist = false;
+    private readonly object whitelistLoadLock = new object();
+    private DateTime lastWhitelistLoad = DateTime.MinValue;
+    private readonly TimeSpan minLoadInterval = TimeSpan.FromSeconds(3); // Minimum 3 secondes entre les chargements
+    
     // Configuration Supabase - À MODIFIER avec vos vraies valeurs
     private const string SUPABASE_URL = "https://ifivxzwkkhwdbblgsbyo.supabase.co";
     private const string SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmaXZ4endra2h3ZGJibGdzYnlvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTQ4OTc0MiwiZXhwIjoyMDY1MDY1NzQyfQ.C-9hO1SdaOVK2KtZfA1C4nBq1JkUO33OOu3icErgdH4";
@@ -252,33 +258,72 @@ public class WhitelistPlugin : BasePlugin
 
             Console.WriteLine($"[CONNECT] Nouvelle connexion détectée: {player.PlayerName}");
             
-            // ÉTAPE 1: Recharger la whitelist pour avoir les données les plus récentes
-            Console.WriteLine("[CONNECT] Rechargement de la whitelist pour être à jour...");
-            
-            // Charger la whitelist de manière synchrone pour ce joueur
-            Task.Run(async () =>
+            // ÉTAPE 1: Vérifier si on peut/doit recharger la whitelist
+            bool shouldReload = false;
+            lock (whitelistLoadLock)
             {
-                await LoadWhitelistFromDatabase();
+                var timeSinceLastLoad = DateTime.Now - lastWhitelistLoad;
                 
-                // ÉTAPE 2: Après le rechargement, vérifier l'autorisation
-                Server.NextFrame(() =>
+                if (!isLoadingWhitelist && timeSinceLastLoad >= minLoadInterval)
+                {
+                    shouldReload = true;
+                    isLoadingWhitelist = true;
+                    Console.WriteLine($"[CONNECT] Rechargement autorisé (dernière fois: {timeSinceLastLoad.TotalSeconds:F1}s)");
+                }
+                else if (isLoadingWhitelist)
+                {
+                    Console.WriteLine("[CONNECT] Rechargement déjà en cours, utilisation des données actuelles");
+                }
+                else
+                {
+                    Console.WriteLine($"[CONNECT] Rechargement trop récent ({timeSinceLastLoad.TotalSeconds:F1}s), utilisation des données actuelles");
+                }
+            }
+            
+            if (shouldReload)
+            {
+                // Charger la whitelist de manière contrôlée
+                Task.Run(async () =>
                 {
                     try
                     {
-                        if (player == null || !player.IsValid || player.Connected != PlayerConnectedState.PlayerConnected)
-                        {
-                            Console.WriteLine("[CONNECT] Joueur déjà déconnecté, ignorer la vérification");
-                            return;
-                        }
-                        
-                        CheckPlayerAuthorization(player);
+                        await LoadWhitelistFromDatabase();
                     }
-                    catch (Exception checkEx)
+                    finally
                     {
-                        Console.WriteLine($"[ERROR] Erreur lors de la vérification d'autorisation: {checkEx.Message}");
+                        lock (whitelistLoadLock)
+                        {
+                            isLoadingWhitelist = false;
+                            lastWhitelistLoad = DateTime.Now;
+                        }
                     }
+                    
+                    // ÉTAPE 2: Après le rechargement, vérifier l'autorisation
+                    Server.NextFrame(() =>
+                    {
+                        try
+                        {
+                            if (player == null || !player.IsValid || player.Connected != PlayerConnectedState.PlayerConnected)
+                            {
+                                Console.WriteLine("[CONNECT] Joueur déjà déconnecté, ignorer la vérification");
+                                return;
+                            }
+                            
+                            CheckPlayerAuthorization(player);
+                        }
+                        catch (Exception checkEx)
+                        {
+                            Console.WriteLine($"[ERROR] Erreur lors de la vérification d'autorisation: {checkEx.Message}");
+                        }
+                    });
                 });
-            });
+            }
+            else
+            {
+                // Utiliser directement les données actuelles sans rechargement
+                Console.WriteLine("[CONNECT] Vérification avec les données actuelles");
+                CheckPlayerAuthorization(player);
+            }
         }
         catch (Exception ex)
         {
