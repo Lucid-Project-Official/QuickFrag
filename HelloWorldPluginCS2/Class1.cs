@@ -1,18 +1,174 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes.Registration;
+using CounterStrikeSharp.API.Modules.Commands;
+using CounterStrikeSharp.API.Modules.Cvars;
+using CounterStrikeSharp.API.Modules.Events;
+using Newtonsoft.Json;
+using System.Net.Http;
+using System.Text;
 
 namespace HelloWorldPluginCS2;
 
-public class MonPlugin : BasePlugin
+public class WhitelistPlugin : BasePlugin
 {
-    public override string ModuleName => "yoloooooo";
+    public override string ModuleName => "QuickFrag Whitelist";
     public override string ModuleVersion => "1.0.0";
-    public override string ModuleAuthor => "Linox";
-    public override string ModuleDescription => "Un plugin test pour CS2";
+    public override string ModuleAuthor => "Linoxyr";
+    public override string ModuleDescription => "Plugin de whitelist dynamique pour CS2 avec Supabase";
+
+    private static readonly HttpClient httpClient = new HttpClient();
+    private string? serverAddress;
+    private List<string> whitelistedSteamIds = new List<string>();
+    
+    // Configuration Supabase - À MODIFIER avec vos vraies valeurs
+    private const string SUPABASE_URL = "https://ifivxzwkkhwdbblgsbyo.supabase.co";
+    private const string SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlmaXZ4endra2h3ZGJibGdzYnlvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTQ4OTc0MiwiZXhwIjoyMDY1MDY1NzQyfQ.C-9hO1SdaOVK2KtZfA1C4nBq1JkUO33OOu3icErgdH4";
+    private const string TABLE_NAME = "ServersManager";
 
     public override void Load(bool hotReload)
     {
-        Console.WriteLine("Plugin CS2 chargé !");
-        Server.PrintToConsole("MonPluginCS2 est actif !");
+        Console.WriteLine("Plugin QuickFrag Whitelist chargé !");
+        Server.PrintToConsole("Plugin de whitelist dynamique actif !");
+        
+        // Obtenir l'adresse du serveur
+        GetServerAddress();
+        
+        // Charger la whitelist depuis Supabase
+        _ = LoadWhitelistFromDatabase();
+        
+        // Enregistrer les événements
+        RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
+    }
+
+    private void GetServerAddress()
+    {
+        try
+        {
+            // Récupérer l'IP et le port du serveur
+            var hostName = ConVar.Find("hostname")?.StringValue ?? "Unknown";
+            var serverPort = ConVar.Find("hostport")?.GetPrimitiveValue<int>() ?? 27015;
+            
+            // Pour l'IP, nous devons utiliser une méthode alternative car CS2 ne donne pas directement l'IP publique
+            // Ici, nous utiliserons l'IP locale et le port pour l'exemple
+            // Dans un environnement de production, vous devriez configurer l'IP publique manuellement
+            string serverIp = "57.130.20.184"; // À remplacer par l'IP réelle du serveur
+            
+            serverAddress = $"{serverIp}:{serverPort}";
+            Console.WriteLine($"Adresse du serveur détectée : {serverAddress}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la détection de l'adresse du serveur : {ex.Message}");
+            serverAddress = "127.0.0.1:27015"; // Valeur par défaut
+        }
+    }
+
+    private async Task LoadWhitelistFromDatabase()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(serverAddress))
+            {
+                Console.WriteLine("Adresse du serveur non disponible pour la recherche en base de données");
+                return;
+            }
+
+            // Construire l'URL de l'API Supabase pour récupérer les données du serveur
+            string url = $"{SUPABASE_URL}/rest/v1/{TABLE_NAME}?server_address=eq.{serverAddress}&select=match_playersteam_1,match_playersteam_2,match_playersteam_3,match_playersteam_4,match_playersteam_5,match_playersteam_6,match_playersteam_7,match_playersteam_8,match_playersteam_9,match_playersteam_10";
+
+            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Add("apikey", SUPABASE_ANON_KEY);
+            httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {SUPABASE_ANON_KEY}");
+
+            HttpResponseMessage response = await httpClient.GetAsync(url);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                string jsonResponse = await response.Content.ReadAsStringAsync();
+                var serverData = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(jsonResponse);
+
+                whitelistedSteamIds.Clear();
+
+                if (serverData != null && serverData.Count > 0)
+                {
+                    var server = serverData[0];
+                    
+                    // Extraire tous les SteamIDs des colonnes match_playersteam_1 à match_playersteam_10
+                    for (int i = 1; i <= 10; i++)
+                    {
+                        string columnName = $"match_playersteam_{i}";
+                        if (server.ContainsKey(columnName) && server[columnName] != null)
+                        {
+                            string steamId = server[columnName].ToString()?.Trim();
+                            if (!string.IsNullOrEmpty(steamId) && steamId != "null")
+                            {
+                                whitelistedSteamIds.Add(steamId);
+                            }
+                        }
+                    }
+
+                    Console.WriteLine($"Whitelist chargée : {whitelistedSteamIds.Count} joueurs autorisés");
+                    Server.PrintToConsole($"Whitelist mise à jour : {whitelistedSteamIds.Count} joueurs autorisés pour ce serveur");
+                }
+                else
+                {
+                    Console.WriteLine($"Aucune configuration trouvée pour le serveur {serverAddress}");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Erreur lors de la récupération des données : {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement de la whitelist : {ex.Message}");
+        }
+    }
+
+    [GameEventHandler]
+    public HookResult OnPlayerConnectFull(EventPlayerConnectFull @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player == null || !player.IsValid)
+            return HookResult.Continue;
+
+        // Vérifier si le joueur est dans la whitelist
+        string playerSteamId = player.SteamID.ToString();
+        
+        if (!whitelistedSteamIds.Contains(playerSteamId))
+        {
+            // Le joueur n'est pas autorisé, le kicker
+            Server.NextFrame(() =>
+            {
+                if (player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
+                {
+                    Server.ExecuteCommand($"kickid {player.Userid} \"Vous ne pouvez pas rejoindre ce match.\"");
+                    Console.WriteLine($"Joueur {player.PlayerName} (SteamID: {playerSteamId}) exclu - non autorisé");
+                }
+            });
+        }
+        else
+        {
+            Console.WriteLine($"Joueur {player.PlayerName} (SteamID: {playerSteamId}) autorisé à rejoindre");
+        }
+
+        return HookResult.Continue;
+    }
+
+    // Commande pour recharger la whitelist manuellement
+    [ConsoleCommand("css_reload_whitelist", "Recharge la whitelist depuis la base de données")]
+    [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
+    public void OnReloadWhitelistCommand(CCSPlayerController? player, CommandInfo commandInfo)
+    {
+        _ = LoadWhitelistFromDatabase();
+        commandInfo.ReplyToCommand("Rechargement de la whitelist en cours...");
+    }
+
+    public override void Unload(bool hotReload)
+    {
+        httpClient?.Dispose();
+        Console.WriteLine("Plugin QuickFrag Whitelist déchargé !");
     }
 }

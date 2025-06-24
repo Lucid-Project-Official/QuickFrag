@@ -6,12 +6,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-</Project>
-
-<ItemGroup>
+  <ItemGroup>
     <Reference Include="CounterStrikeSharp.API">
-      <HintPath>/home/root/CS2DS_27016/game/csgo/addons/counterstrikesharp/api/CounterStrikeSharp.API.dll</HintPath>
+      <HintPath>C:\Users\Kestas\Documents\QuickFrag\counterstrikesharp-with-runtime-linux-1.0.319\addons\counterstrikesharp\api\CounterStrikeSharp.API.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
 
 </Project>
