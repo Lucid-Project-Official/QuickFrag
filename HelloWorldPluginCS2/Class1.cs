@@ -145,7 +145,7 @@ public class WhitelistPlugin : BasePlugin
             {
                 if (player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
                 {
-                    Server.ExecuteCommand($"kickid {player.Userid} \"Vous ne pouvez pas rejoindre ce match.\"");
+                    Server.ExecuteCommand($"kickid {player.UserId} \"Vous ne pouvez pas rejoindre ce match.\"");
                     Console.WriteLine($"Joueur {player.PlayerName} (SteamID: {playerSteamId}) exclu - non autorisé");
                 }
             });
