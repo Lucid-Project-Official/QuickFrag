@@ -19,6 +19,8 @@ public class WhitelistPlugin : BasePlugin
     private HttpClient? httpClient;
     private string? serverAddress;
     private List<string> whitelistedSteamIds = new List<string>();
+    private readonly HashSet<string> recentlyKickedPlayers = new HashSet<string>();
+    private readonly object kickLock = new object();
     
     // Configuration Supabase - À MODIFIER avec vos vraies valeurs
     private const string SUPABASE_URL = "https://ifivxzwkkhwdbblgsbyo.supabase.co";
@@ -178,28 +180,96 @@ public class WhitelistPlugin : BasePlugin
     [GameEventHandler]
     public HookResult OnPlayerConnectFull(EventPlayerConnectFull @event, GameEventInfo info)
     {
-        var player = @event.Userid;
-        if (player == null || !player.IsValid)
-            return HookResult.Continue;
+        try
+        {
+            var player = @event.Userid;
+            if (player == null || !player.IsValid)
+                return HookResult.Continue;
 
-        // Vérifier si le joueur est dans la whitelist
-        string playerSteamId = player.SteamID.ToString();
-        
-        if (!whitelistedSteamIds.Contains(playerSteamId))
-        {
-            // Le joueur n'est pas autorisé, le kicker
-            Server.NextFrame(() =>
+            // Récupérer différents formats de SteamID pour diagnostiquer
+            string playerSteamId64 = player.SteamID.ToString();
+            string playerAuthId = player.AuthorizedSteamID?.SteamId64.ToString() ?? "N/A";
+            
+            Console.WriteLine($"[DEBUG] Connexion joueur: {player.PlayerName}");
+            Console.WriteLine($"[DEBUG] SteamID (player.SteamID): {playerSteamId64}");
+            Console.WriteLine($"[DEBUG] AuthorizedSteamID: {playerAuthId}");
+            Console.WriteLine($"[DEBUG] Whitelist contient {whitelistedSteamIds.Count} entrées:");
+            
+            foreach (var whitelistedId in whitelistedSteamIds)
             {
-                if (player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
-                {
-                    Server.ExecuteCommand($"kickid {player.UserId} \"Vous ne pouvez pas rejoindre ce match.\"");
-                    Console.WriteLine($"Joueur {player.PlayerName} (SteamID: {playerSteamId}) exclu - non autorisé");
-                }
-            });
+                Console.WriteLine($"[DEBUG] - Whitelist: '{whitelistedId}'");
+            }
+            
+            // Tenter les différents formats pour la comparaison
+            bool isAuthorized = whitelistedSteamIds.Contains(playerSteamId64) || 
+                               whitelistedSteamIds.Contains(playerAuthId);
+            
+            Console.WriteLine($"[DEBUG] Résultat autorisation: {isAuthorized}");
+            
+                         if (!isAuthorized)
+             {
+                 // Protection contre les reconnexions rapides
+                 lock (kickLock)
+                 {
+                     if (recentlyKickedPlayers.Contains(playerSteamId64))
+                     {
+                         Console.WriteLine($"[WARNING] Joueur {player.PlayerName} déjà récemment kické - ignoré pour éviter le crash");
+                         return HookResult.Continue;
+                     }
+                     
+                     recentlyKickedPlayers.Add(playerSteamId64);
+                 }
+                 
+                 Console.WriteLine($"[INFO] Joueur {player.PlayerName} non autorisé - préparation du kick");
+                 
+                 // Le joueur n'est pas autorisé, le kicker avec une approche plus sûre
+                 Server.NextFrame(() =>
+                 {
+                     try
+                     {
+                         if (player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
+                         {
+                             Console.WriteLine($"[INFO] Execution du kick pour {player.PlayerName}");
+                             Server.ExecuteCommand($"kickid {player.UserId} \"Vous ne pouvez pas rejoindre ce match.\"");
+                             Console.WriteLine($"[SUCCESS] Joueur {player.PlayerName} (SteamID: {playerSteamId64}) exclu - non autorisé");
+                             
+                             // Nettoyer après 10 secondes
+                             Task.Delay(10000).ContinueWith(_ =>
+                             {
+                                 lock (kickLock)
+                                 {
+                                     recentlyKickedPlayers.Remove(playerSteamId64);
+                                 }
+                             });
+                         }
+                         else
+                         {
+                             Console.WriteLine($"[WARNING] Impossible de kicker - joueur déjà déconnecté");
+                             lock (kickLock)
+                             {
+                                 recentlyKickedPlayers.Remove(playerSteamId64);
+                             }
+                         }
+                     }
+                     catch (Exception kickEx)
+                     {
+                         Console.WriteLine($"[ERROR] Erreur lors du kick: {kickEx.Message}");
+                         lock (kickLock)
+                         {
+                             recentlyKickedPlayers.Remove(playerSteamId64);
+                         }
+                     }
+                 });
+             }
+            else
+            {
+                Console.WriteLine($"[SUCCESS] Joueur {player.PlayerName} (SteamID: {playerSteamId64}) autorisé à rejoindre");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine($"Joueur {player.PlayerName} (SteamID: {playerSteamId}) autorisé à rejoindre");
+            Console.WriteLine($"[CRITICAL] Erreur dans OnPlayerConnectFull: {ex.Message}");
+            Console.WriteLine($"[CRITICAL] Stack trace: {ex.StackTrace}");
         }
 
         return HookResult.Continue;
