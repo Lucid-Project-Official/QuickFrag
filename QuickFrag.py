@@ -735,8 +735,11 @@ async def on_interaction(interaction: discord.Interaction):
                     
                     PlayedMatchID = result3["match_ID"]
                     
-                    # Mise à jour du statut du match
+                    # 1. MISE À JOUR DU STATUT DU MATCH
                     supabase.table("Matchs").update({"match_Status": 2}).eq("match_ID", PlayedMatchID).execute()
+                    
+                    # 2. RÉCUPÉRATION ET MISE À JOUR DES STEAMIDS AVANT LE REDÉMARRAGE
+                    print(f"[INFO] Préparation de la whitelist pour le match {PlayedMatchID}")
                     
                     # Récupération des Discord_PlayerID des joueurs du match
                     match_players_response = supabase.table("Matchs").select(
@@ -768,7 +771,7 @@ async def on_interaction(interaction: discord.Interaction):
                                 else:
                                     print(f"[WARNING] Aucun SteamID trouvé pour Discord ID: {discord_player_id}")
                     
-                    # Mise à jour du serveur avec les SteamIDs
+                    # Mise à jour du serveur avec les SteamIDs AVANT le redémarrage
                     server_update_data = {
                         "match_ID": PlayedMatchID,
                         "server_State": 2,
@@ -781,14 +784,16 @@ async def on_interaction(interaction: discord.Interaction):
                     supabase.table("ServersManager").update(server_update_data).eq("server_ID", result[indexmatch]["server_ID"]).execute()
                     
                     print(f"[SUCCESS] Serveur mis à jour avec {len(steam_ids_data)} SteamIDs pour le match {PlayedMatchID}")
+                    print(f"[INFO] Whitelist prête, démarrage du serveur CS2...")
 
+                    # 3. PRÉPARATION DE LA COMMANDE SSH
                     sshadress = "ubuntu@"+str(result[indexmatch]["server_IPAdress"][:-6])
                     sshcommand = "sudo ./cs2_server_27016 " +map_choiced + " competitive restart"
                     ssh_key = "/root/.ssh/id_rsa_cs2"
 
                     ssh_command= ["ssh","-i",ssh_key,"-o","StrictHostKeyChecking=no",sshadress,sshcommand]
 
-                    # Démarrage du compte à rebours et de la commande SSH
+                    # 4. DÉMARRAGE DU COMPTE À REBOURS ET DE LA COMMANDE SSH
                     start_time = asyncio.get_event_loop().time()
 
                     await interaction.response.defer()
