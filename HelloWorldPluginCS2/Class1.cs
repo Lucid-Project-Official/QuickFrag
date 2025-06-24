@@ -21,6 +21,7 @@ public class WhitelistPlugin : BasePlugin
     private List<string> whitelistedSteamIds = new List<string>();
     private readonly HashSet<string> recentlyKickedPlayers = new HashSet<string>();
     private readonly object kickLock = new object();
+    private bool whitelistEnabled = true;
     
     // Configuration Supabase - À MODIFIER avec vos vraies valeurs
     private const string SUPABASE_URL = "https://ifivxzwkkhwdbblgsbyo.supabase.co";
@@ -75,12 +76,15 @@ public class WhitelistPlugin : BasePlugin
                 {
                     await Task.Delay(30000); // Attendre 30 secondes
                     
-                    Console.WriteLine("[PERIODIC] Rechargement automatique de la whitelist...");
+                    // Recharger seulement si le serveur n'est pas trop chargé
+                    Console.WriteLine("[PERIODIC] Rechargement automatique...");
                     await LoadWhitelistFromDatabase();
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[PERIODIC] Erreur lors du rechargement automatique: {ex.Message}");
+                    Console.WriteLine($"[PERIODIC] Erreur: {ex.Message}");
+                    // En cas d'erreur, attendre plus longtemps avant de réessayer
+                    await Task.Delay(60000);
                 }
             }
         });
@@ -305,8 +309,21 @@ public class WhitelistPlugin : BasePlugin
     {
         try
         {
+            // Si la whitelist est désactivée, autoriser tout le monde
+            if (!whitelistEnabled)
+            {
+                return;
+            }
+            
             string playerSteamId64 = player.SteamID.ToString();
             string playerName = player.PlayerName ?? "Unknown";
+            
+            // Si pas de données de whitelist, autoriser par sécurité (éviter de kicker tout le monde)
+            if (whitelistedSteamIds.Count == 0)
+            {
+                Console.WriteLine($"[WARNING] Whitelist vide - {playerName} autorisé par défaut");
+                return;
+            }
             
             bool isAuthorized = whitelistedSteamIds.Contains(playerSteamId64);
             
@@ -322,32 +339,54 @@ public class WhitelistPlugin : BasePlugin
                     recentlyKickedPlayers.Add(playerSteamId64);
                 }
                 
-                // Kick rapide et simple
-                try
+                // DÉLÉGUER LE KICK À UN THREAD SÉPARÉ pour éviter de bloquer le serveur
+                Task.Run(() =>
                 {
-                    Server.ExecuteCommand($"kick \"{playerName}\" \"Accès non autorisé\"");
-                    Console.WriteLine($"[KICK] {playerName} (SteamID: {playerSteamId64}) - Non autorisé");
-                }
-                catch
-                {
-                    // Fallback silencieux
-                    try { Server.ExecuteCommand($"kickid {player.UserId} \"Accès non autorisé\""); } catch { }
-                }
+                    try
+                    {
+                        // Attendre un petit délai pour éviter les conflits de timing
+                        Thread.Sleep(100);
+                        
+                        Server.NextFrame(() =>
+                        {
+                            try
+                            {
+                                if (player != null && player.IsValid)
+                                {
+                                    Server.ExecuteCommand($"kick \"{playerName}\" \"Accès non autorisé\"");
+                                    Console.WriteLine($"[KICK] {playerName} - Non autorisé");
+                                }
+                            }
+                            catch (Exception kickEx)
+                            {
+                                Console.WriteLine($"[KICK_ERROR] {kickEx.Message}");
+                            }
+                        });
+                    }
+                    catch (Exception taskEx)
+                    {
+                        Console.WriteLine($"[TASK_ERROR] {taskEx.Message}");
+                    }
+                });
                 
-                // Nettoyer après 5 secondes
-                Task.Delay(5000).ContinueWith(_ =>
+                // Nettoyer après 10 secondes
+                Task.Delay(10000).ContinueWith(_ =>
                 {
                     lock (kickLock) { recentlyKickedPlayers.Remove(playerSteamId64); }
                 });
             }
             else
             {
-                Console.WriteLine($"[AUTH] {playerName} autorisé");
+                // Log minimal pour éviter le spam
+                if (whitelistedSteamIds.Count > 0) // Seulement si on a des données
+                {
+                    Console.WriteLine($"[AUTH] {playerName} autorisé");
+                }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Erreur authorization: {ex.Message}");
+            Console.WriteLine($"[ERROR] Auth error: {ex.Message}");
         }
     }
     
@@ -498,6 +537,17 @@ public class WhitelistPlugin : BasePlugin
         }
         
         commandInfo.ReplyToCommand($"Whitelist: {whitelistedSteamIds.Count} joueurs autorisés");
+    }
+
+    // Commande pour désactiver/activer la whitelist
+    [ConsoleCommand("css_whitelist_toggle", "Active/désactive la whitelist")]
+    [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
+    public void OnWhitelistToggleCommand(CCSPlayerController? player, CommandInfo commandInfo)
+    {
+        whitelistEnabled = !whitelistEnabled;
+        string status = whitelistEnabled ? "ACTIVÉE" : "DÉSACTIVÉE";
+        Console.WriteLine($"[TOGGLE] Whitelist {status}");
+        commandInfo.ReplyToCommand($"Whitelist {status}");
     }
 
     public override void Unload(bool hotReload)
