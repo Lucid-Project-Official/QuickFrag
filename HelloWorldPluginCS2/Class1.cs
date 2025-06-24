@@ -65,22 +65,63 @@ public class WhitelistPlugin : BasePlugin
     {
         try
         {
-            // Récupérer l'IP et le port du serveur
-            var hostName = ConVar.Find("hostname")?.StringValue ?? "Unknown";
-            var serverPort = ConVar.Find("hostport")?.GetPrimitiveValue<int>() ?? 27016;
+            Console.WriteLine("[PORT] Diagnostic des variables de port du serveur CS2:");
+            
+            // Tester différentes variables de port
+            var hostPort = ConVar.Find("hostport");
+            var port = ConVar.Find("port");
+            var ip = ConVar.Find("ip");
+            var netPort = ConVar.Find("net_port");
+            var hostName = ConVar.Find("hostname");
+            
+            Console.WriteLine($"[PORT] hostname: {hostName?.StringValue ?? "NULL"}");
+            Console.WriteLine($"[PORT] hostport: {hostPort?.GetPrimitiveValue<int>() ?? -1} (existe: {hostPort != null})");
+            Console.WriteLine($"[PORT] port: {port?.GetPrimitiveValue<int>() ?? -1} (existe: {port != null})");
+            Console.WriteLine($"[PORT] ip: {ip?.StringValue ?? "NULL"}");
+            Console.WriteLine($"[PORT] net_port: {netPort?.GetPrimitiveValue<int>() ?? -1} (existe: {netPort != null})");
+            
+            // Essayer de récupérer le bon port
+            int serverPort = 27016; // Port par défaut
+            
+            // Prioriser les variables dans l'ordre de fiabilité
+            if (hostPort != null)
+            {
+                serverPort = hostPort.GetPrimitiveValue<int>();
+                Console.WriteLine($"[PORT] Utilisation de hostport: {serverPort}");
+            }
+            else if (port != null)
+            {
+                serverPort = port.GetPrimitiveValue<int>();
+                Console.WriteLine($"[PORT] Utilisation de port: {serverPort}");
+            }
+            else if (netPort != null)
+            {
+                serverPort = netPort.GetPrimitiveValue<int>();
+                Console.WriteLine($"[PORT] Utilisation de net_port: {serverPort}");
+            }
+            else
+            {
+                Console.WriteLine($"[PORT] Aucune variable trouvée, utilisation du port par défaut: {serverPort}");
+            }
+            
+            // Si le port détecté est 27015, forcer 27016 selon votre configuration
+            if (serverPort == 27015)
+            {
+                Console.WriteLine("[PORT] Port 27015 détecté, mais serveur configuré pour 27016 - correction appliquée");
+                serverPort = 27016;
+            }
             
             // Pour l'IP, nous devons utiliser une méthode alternative car CS2 ne donne pas directement l'IP publique
-            // Ici, nous utiliserons l'IP locale et le port pour l'exemple
-            // Dans un environnement de production, vous devriez configurer l'IP publique manuellement
-            string serverIp = "57.130.20.184"; // À remplacer par l'IP réelle du serveur
+            string serverIp = "57.130.20.184"; // IP configurée manuellement
             
             serverAddress = $"{serverIp}:{serverPort}";
-            Console.WriteLine($"Adresse du serveur détectée : {serverAddress}");
+            Console.WriteLine($"[PORT] Adresse finale du serveur : {serverAddress}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur lors de la détection de l'adresse du serveur : {ex.Message}");
-            serverAddress = "57.130.20.184:27016"; // Valeur par défaut
+            Console.WriteLine($"[ERROR] Erreur lors de la détection de l'adresse du serveur : {ex.Message}");
+            serverAddress = "57.130.20.184:27016"; // Valeur par défaut sécurisée
+            Console.WriteLine($"[PORT] Utilisation de l'adresse par défaut : {serverAddress}");
         }
     }
 
