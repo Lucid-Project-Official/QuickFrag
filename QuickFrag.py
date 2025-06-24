@@ -768,11 +768,17 @@ async def on_interaction(interaction: discord.Interaction):
                                 
                                 if player_steam_response.data:
                                     steam_id = player_steam_response.data[0]["Steam_PlayerID"]
-                                    if steam_id and steam_id.strip():
-                                        steam_ids_data[f"match_playersteam_{i}"] = steam_id.strip()
-                                        print(f"[DEBUG] Joueur {i} - Discord ID: {discord_player_id} -> Steam ID: {steam_id}")
+                                    if steam_id is not None:
+                                        # Convertir en chaîne et nettoyer
+                                        steam_id_str = str(steam_id).strip()
+                                        if steam_id_str and steam_id_str != "None":
+                                            steam_ids_data[f"match_playersteam_{i}"] = steam_id_str
+                                            print(f"[DEBUG] Joueur {i} - Discord ID: {discord_player_id} -> Steam ID: {steam_id_str}")
+                                        else:
+                                            print(f"[WARNING] SteamID vide pour Discord ID: {discord_player_id}")
+                                            steam_ids_data[f"match_playersteam_{i}"] = ""
                                     else:
-                                        print(f"[WARNING] SteamID vide pour Discord ID: {discord_player_id}")
+                                        print(f"[WARNING] SteamID null pour Discord ID: {discord_player_id}")
                                         steam_ids_data[f"match_playersteam_{i}"] = ""
                                 else:
                                     print(f"[WARNING] Aucun SteamID trouvé pour Discord ID: {discord_player_id}")
