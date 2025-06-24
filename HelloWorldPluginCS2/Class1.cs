@@ -46,8 +46,13 @@ public class WhitelistPlugin : BasePlugin
         // Obtenir l'adresse du serveur
         GetServerAddress();
         
-        // Charger la whitelist depuis Supabase
-        _ = LoadWhitelistFromDatabase();
+        // Charger la whitelist depuis Supabase avec délai pour s'assurer que le serveur est prêt
+        Console.WriteLine("[INIT] Programmation du chargement de la whitelist dans 5 secondes...");
+        Task.Delay(5000).ContinueWith(_ => 
+        {
+            Console.WriteLine("[INIT] Début du chargement de la whitelist...");
+            _ = LoadWhitelistFromDatabase();
+        });
         
         // Enregistrer les événements
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
@@ -81,6 +86,9 @@ public class WhitelistPlugin : BasePlugin
 
     private async Task LoadWhitelistFromDatabase()
     {
+        Console.WriteLine("======== DÉBUT LOADWHITELISTFROMDATABASE ========");
+        Console.WriteLine($"[TIMESTAMP] {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        
         try
         {
             Console.WriteLine("[DEBUG] Début de LoadWhitelistFromDatabase()");
@@ -185,6 +193,11 @@ public class WhitelistPlugin : BasePlugin
             Console.WriteLine($"[EXCEPTION] Erreur lors du chargement de la whitelist : {ex.Message}");
             Console.WriteLine($"[EXCEPTION] Stack Trace : {ex.StackTrace}");
         }
+        finally
+        {
+            Console.WriteLine($"[FINAL] Whitelist finale: {whitelistedSteamIds.Count} entrées");
+            Console.WriteLine("======== FIN LOADWHITELISTFROMDATABASE ========");
+        }
     }
 
     [GameEventHandler]
@@ -196,25 +209,68 @@ public class WhitelistPlugin : BasePlugin
             if (player == null || !player.IsValid)
                 return HookResult.Continue;
 
+            Console.WriteLine($"[CONNECT] Nouvelle connexion détectée: {player.PlayerName}");
+            
+            // ÉTAPE 1: Recharger la whitelist pour avoir les données les plus récentes
+            Console.WriteLine("[CONNECT] Rechargement de la whitelist pour être à jour...");
+            
+            // Charger la whitelist de manière synchrone pour ce joueur
+            Task.Run(async () =>
+            {
+                await LoadWhitelistFromDatabase();
+                
+                // ÉTAPE 2: Après le rechargement, vérifier l'autorisation
+                Server.NextFrame(() =>
+                {
+                    try
+                    {
+                        if (player == null || !player.IsValid || player.Connected != PlayerConnectedState.PlayerConnected)
+                        {
+                            Console.WriteLine("[CONNECT] Joueur déjà déconnecté, ignorer la vérification");
+                            return;
+                        }
+                        
+                        CheckPlayerAuthorization(player);
+                    }
+                    catch (Exception checkEx)
+                    {
+                        Console.WriteLine($"[ERROR] Erreur lors de la vérification d'autorisation: {checkEx.Message}");
+                    }
+                });
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CRITICAL] Erreur dans OnPlayerConnectFull: {ex.Message}");
+            Console.WriteLine($"[CRITICAL] Stack trace: {ex.StackTrace}");
+        }
+
+        return HookResult.Continue;
+    }
+    
+    private void CheckPlayerAuthorization(CCSPlayerController player)
+    {
+        try
+        {
             // Récupérer différents formats de SteamID pour diagnostiquer
             string playerSteamId64 = player.SteamID.ToString();
             string playerAuthId = player.AuthorizedSteamID?.SteamId64.ToString() ?? "N/A";
             
-            Console.WriteLine($"[DEBUG] Connexion joueur: {player.PlayerName}");
-            Console.WriteLine($"[DEBUG] SteamID (player.SteamID): {playerSteamId64}");
-            Console.WriteLine($"[DEBUG] AuthorizedSteamID: {playerAuthId}");
-            Console.WriteLine($"[DEBUG] Whitelist contient {whitelistedSteamIds.Count} entrées:");
+            Console.WriteLine($"[AUTH] Vérification d'autorisation pour: {player.PlayerName}");
+            Console.WriteLine($"[AUTH] SteamID (player.SteamID): {playerSteamId64}");
+            Console.WriteLine($"[AUTH] AuthorizedSteamID: {playerAuthId}");
+            Console.WriteLine($"[AUTH] Whitelist contient {whitelistedSteamIds.Count} entrées:");
             
             foreach (var whitelistedId in whitelistedSteamIds)
             {
-                Console.WriteLine($"[DEBUG] - Whitelist: '{whitelistedId}'");
+                Console.WriteLine($"[AUTH] - Whitelist: '{whitelistedId}'");
             }
             
             // Tenter les différents formats pour la comparaison
             bool isAuthorized = whitelistedSteamIds.Contains(playerSteamId64) || 
                                whitelistedSteamIds.Contains(playerAuthId);
             
-            Console.WriteLine($"[DEBUG] Résultat autorisation: {isAuthorized}");
+            Console.WriteLine($"[AUTH] Résultat autorisation: {isAuthorized}");
             
                          if (!isAuthorized)
              {
@@ -258,21 +314,11 @@ public class WhitelistPlugin : BasePlugin
                                      Server.ExecuteCommand($"kickid {player.UserId} \"Vous ne pouvez pas rejoindre ce match.\"");
                                      Console.WriteLine($"[SUCCESS] Kick par UserID exécuté pour {player.PlayerName}");
                                  }
-                                 catch (Exception kickIdEx)
-                                 {
-                                     Console.WriteLine($"[ERROR] Kick par UserID échoué: {kickIdEx.Message}");
-                                     
-                                     try
-                                     {
-                                         // Méthode 3: Déconnexion directe (dernier recours)
-                                         player.Disconnect();
-                                         Console.WriteLine($"[SUCCESS] Déconnexion directe exécutée pour {player.PlayerName}");
-                                     }
-                                     catch (Exception disconnectEx)
-                                     {
-                                         Console.WriteLine($"[ERROR] Déconnexion directe échouée: {disconnectEx.Message}");
-                                     }
-                                 }
+                                                                   catch (Exception kickIdEx)
+                                  {
+                                      Console.WriteLine($"[ERROR] Kick par UserID échoué: {kickIdEx.Message}");
+                                      Console.WriteLine($"[WARNING] Toutes les méthodes de kick ont échoué pour {player.PlayerName}");
+                                  }
                              }
                              
                              Console.WriteLine($"[SUCCESS] Joueur {player.PlayerName} (SteamID: {playerSteamId64}) traité - non autorisé");
@@ -312,11 +358,9 @@ public class WhitelistPlugin : BasePlugin
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[CRITICAL] Erreur dans OnPlayerConnectFull: {ex.Message}");
+            Console.WriteLine($"[CRITICAL] Erreur dans CheckPlayerAuthorization: {ex.Message}");
             Console.WriteLine($"[CRITICAL] Stack trace: {ex.StackTrace}");
         }
-
-        return HookResult.Continue;
     }
 
     // Commande pour recharger la whitelist manuellement
@@ -324,8 +368,33 @@ public class WhitelistPlugin : BasePlugin
     [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
     public void OnReloadWhitelistCommand(CCSPlayerController? player, CommandInfo commandInfo)
     {
+        Console.WriteLine("[MANUAL] Rechargement manuel de la whitelist demandé");
         _ = LoadWhitelistFromDatabase();
         commandInfo.ReplyToCommand("Rechargement de la whitelist en cours...");
+    }
+
+    // Commande pour afficher le statut de la whitelist
+    [ConsoleCommand("css_whitelist_status", "Affiche le statut de la whitelist")]
+    [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
+    public void OnWhitelistStatusCommand(CCSPlayerController? player, CommandInfo commandInfo)
+    {
+        Console.WriteLine($"[STATUS] Adresse du serveur: {serverAddress}");
+        Console.WriteLine($"[STATUS] Nombre de joueurs autorisés: {whitelistedSteamIds.Count}");
+        Console.WriteLine($"[STATUS] Liste des SteamIDs autorisés:");
+        
+        if (whitelistedSteamIds.Count == 0)
+        {
+            Console.WriteLine("[STATUS] - Aucun joueur autorisé (WHITELIST VIDE!)");
+        }
+        else
+        {
+            foreach (var steamId in whitelistedSteamIds)
+            {
+                Console.WriteLine($"[STATUS] - {steamId}");
+            }
+        }
+        
+        commandInfo.ReplyToCommand($"Whitelist: {whitelistedSteamIds.Count} joueurs autorisés");
     }
 
     public override void Unload(bool hotReload)
