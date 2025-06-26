@@ -839,6 +839,41 @@ async def on_interaction(interaction: discord.Interaction):
             user_joined_id = interaction.user.id
             user_joind_guild = interaction.guild.id
 
+            # Vérification du compte Steam lié
+            player_steam_response = supabase.table("Players").select(
+                "Steam_PlayerID"
+            ).eq("Discord_PlayerID", str(user_joined_id)).execute()
+            
+            player_exists = False
+            steam_id_valid = False
+            
+            if player_steam_response.data:
+                player_data = player_steam_response.data[0]
+                player_exists = True
+                steam_id = player_data.get("Steam_PlayerID")
+                if steam_id and str(steam_id).strip() and str(steam_id).strip() != "None":
+                    steam_id_valid = True
+            
+            if not player_exists:
+                # Créer une nouvelle ligne avec le Discord_PlayerID
+                supabase.table("Players").insert({
+                    "Discord_PlayerID": str(user_joined_id)
+                }).execute()
+                
+                await interaction.followup.send(
+                    "❌ Vous ne pouvez pas rejoindre la partie car aucun compte Steam n'est lié à votre compte Discord. "
+                    "Veuillez lier votre compte Steam pour participer aux matchs.", 
+                    ephemeral=True
+                )
+                return
+            elif not steam_id_valid:
+                await interaction.followup.send(
+                    "❌ Vous ne pouvez pas rejoindre la partie car aucun compte Steam n'est lié à votre compte Discord. "
+                    "Veuillez lier votre compte Steam pour participer aux matchs.", 
+                    ephemeral=True
+                )
+                return
+
             channel = interaction.channel
             channel_id = channel.id
             user_voice_connected = False
