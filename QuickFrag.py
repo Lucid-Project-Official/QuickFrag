@@ -43,7 +43,7 @@ def generate_steam_auth_url(discord_user_id):
     params = {
         "openid.ns": "http://specs.openid.net/auth/2.0",
         "openid.mode": "checkid_setup",
-        "openid.return_to": f"https://quickfrag.vercel.app/api/steam-callback?token={token}&discord_id={discord_user_id}",
+        "openid.return_to": f"https://quickfrag-hgxkr4z3x-linoxyrs-projects.vercel.app/api/steam-callback?token={token}&discord_id={discord_user_id}",
         "openid.realm": "https://quickfrag.vercel.app",
         "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
         "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select"
@@ -80,6 +80,61 @@ async def verify_steam_openid(response_params):
     except Exception as e:
         print(f"Erreur lors de la vérification Steam OpenID: {e}")
         return None
+
+async def check_steam_link_required(interaction, action_description="participer"):
+    """Vérifie si l'utilisateur a un compte Steam lié. Retourne True si lié, False sinon."""
+    user_id = interaction.user.id
+    
+    # Vérification du compte Steam lié
+    player_steam_response = supabase.table("Players").select(
+        "Steam_PlayerID"
+    ).eq("Discord_PlayerID", str(user_id)).execute()
+    
+    player_exists = False
+    steam_id_valid = False
+    
+    if player_steam_response.data:
+        player_data = player_steam_response.data[0]
+        player_exists = True
+        steam_id = player_data.get("Steam_PlayerID")
+        if steam_id and str(steam_id).strip() and str(steam_id).strip() != "None":
+            steam_id_valid = True
+    
+    if not player_exists or not steam_id_valid:
+        # Générer le lien d'authentification Steam
+        auth_url, token = generate_steam_auth_url(user_id)
+        
+        if not player_exists:
+            # Créer une nouvelle ligne avec le Discord_PlayerID
+            supabase.table("Players").insert({
+                "Discord_PlayerID": str(user_id)
+            }).execute()
+        
+        embed = discord.Embed(
+            title="🔗 Liaison compte Steam requise",
+            description=f"Vous devez lier votre compte Steam à votre compte Discord pour {action_description}.",
+            color=discord.Color.orange()
+        )
+        embed.add_field(
+            name="📋 Instructions",
+            value="1. Cliquez sur le lien ci-dessous\n"
+                  "2. Connectez-vous à votre compte Steam\n"
+                  "3. Autorisez la liaison\n"
+                  "4. Vous recevrez une confirmation par message privé\n"
+                  "5. Vous pourrez ensuite continuer",
+            inline=False
+        )
+        embed.add_field(
+            name="🔗 Lien de liaison Steam",
+            value=f"[**Cliquer ici pour lier votre compte Steam**]({auth_url})",
+            inline=False
+        )
+        embed.set_footer(text="Ce lien expire dans 30 minutes")
+        
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        return False
+    
+    return True
 
 async def handle_steam_callback(token, steam_response_params):
     """Traite le callback de Steam et lie le compte"""
@@ -831,6 +886,10 @@ async def on_interaction(interaction: discord.Interaction):
             await interaction.response.defer()
         if interaction.data.get("custom_id") == "create_private_game":
             await interaction.response.defer()
+            
+            # Vérification du compte Steam lié pour le créateur
+            if not await check_steam_link_required(interaction, "créer une partie privée"):
+                return
         if interaction.data.get("custom_id") == "connect_server":
             channel = interaction.channel
             channel_id = channel.id
@@ -1048,51 +1107,7 @@ async def on_interaction(interaction: discord.Interaction):
             user_joind_guild = interaction.guild.id
 
             # Vérification du compte Steam lié
-            player_steam_response = supabase.table("Players").select(
-                "Steam_PlayerID"
-            ).eq("Discord_PlayerID", str(user_joined_id)).execute()
-            
-            player_exists = False
-            steam_id_valid = False
-            
-            if player_steam_response.data:
-                player_data = player_steam_response.data[0]
-                player_exists = True
-                steam_id = player_data.get("Steam_PlayerID")
-                if steam_id and str(steam_id).strip() and str(steam_id).strip() != "None":
-                    steam_id_valid = True
-            
-            if not player_exists or not steam_id_valid:
-                # Générer le lien d'authentification Steam
-                auth_url, token = generate_steam_auth_url(user_joined_id)
-                
-                if not player_exists:
-                    # Créer une nouvelle ligne avec le Discord_PlayerID
-                    supabase.table("Players").insert({
-                        "Discord_PlayerID": str(user_joined_id)
-                    }).execute()
-                
-                embed = discord.Embed(
-                    title="🔗 Liaison compte Steam requise",
-                    description="Vous devez lier votre compte Steam à votre compte Discord pour rejoindre une partie.",
-                    color=discord.Color.orange()
-                )
-                embed.add_field(
-                    name="📋 Instructions",
-                    value="1. Cliquez sur le lien ci-dessous\n"
-                          "2. Connectez-vous à votre compte Steam\n"
-                          "3. Autorisez la liaison\n"
-                          "4. Vous recevrez une confirmation par message privé",
-                    inline=False
-                )
-                embed.add_field(
-                    name="🔗 Lien de liaison Steam",
-                    value=f"[**Cliquer ici pour lier votre compte Steam**]({auth_url})",
-                    inline=False
-                )
-                embed.set_footer(text="Ce lien expire dans 30 minutes")
-                
-                await interaction.followup.send(embed=embed, ephemeral=True)
+            if not await check_steam_link_required(interaction, "rejoindre une partie"):
                 return
 
             channel = interaction.channel
@@ -1189,6 +1204,11 @@ async def on_interaction(interaction: discord.Interaction):
                     
         if interaction.data.get("custom_id") == "create_public_game":
             await interaction.response.defer()
+            
+            # Vérification du compte Steam lié pour le créateur
+            if not await check_steam_link_required(interaction, "créer une partie publique"):
+                return
+
             is_modifiabled = 0
 
             channel = interaction.channel
@@ -1201,11 +1221,13 @@ async def on_interaction(interaction: discord.Interaction):
                 await interaction.followup.send(
                     f"❌ Vous ne pouvez pas être plus de 5 joueurs lors de la création d'une partie", ephemeral=True
                 )
+                return
                 
             if user_voice_connected == False :
                 await interaction.followup.send(
                     f"🎧 Vous devez vous connecter sur le channel vocal : <#{channel.id}>", ephemeral=True
                 )
+                return
             else : 
                 # Récupération des matchs publics existants
                 public_matches_response = supabase.table("Matchs").select("*").eq("match_Status", 1).eq("private_party", False).execute()
