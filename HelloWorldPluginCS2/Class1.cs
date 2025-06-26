@@ -224,7 +224,11 @@ public class WhitelistPlugin : BasePlugin
                     recentlyKickedPlayers.Add(playerSteamId64);
                 }
                 
-                Console.WriteLine($"[KICK] {playerName} - Non autorisé");
+                Console.WriteLine($"[KICK] Joueur non autorisé:");
+                Console.WriteLine($"  - Nom: \"{playerName}\"");
+                Console.WriteLine($"  - SteamID: {playerSteamId64}");
+                Console.WriteLine($"  - UserID: {player.UserId}");
+                Console.WriteLine($"  - Slot: {player.Slot}");
                 
                 Task.Run(() =>
                 {
@@ -233,14 +237,42 @@ public class WhitelistPlugin : BasePlugin
                     {
                         try
                         {
-                            if (player != null && player.IsValid)
+                            if (player != null && player.IsValid && player.Connected == PlayerConnectedState.PlayerConnected)
                             {
-                                Server.ExecuteCommand($"kick \"{playerName}\" \"Accès non autorisé\"");
+                                // Utiliser l'API directe plutôt que les commandes console
+                                Server.ExecuteCommand($"kickid {player.UserId} \"Accès non autorisé\"");
+                                Console.WriteLine($"[KICK] {playerName} (SteamID: {player.SteamID}) - Kick par UserID");
                             }
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine($"[ERROR] Kick: {ex.Message}");
+                            Console.WriteLine($"[ERROR] Kick par UserID: {ex.Message}");
+                            // Fallback : utiliser le slot
+                            try
+                            {
+                                if (player != null && player.IsValid)
+                                {
+                                    Server.ExecuteCommand($"kick #{player.Slot} \"Accès non autorisé\"");
+                                    Console.WriteLine($"[KICK] {playerName} - Fallback par Slot #{player.Slot}");
+                                }
+                            }
+                            catch (Exception slotEx)
+                            {
+                                Console.WriteLine($"[ERROR] Kick par Slot: {slotEx.Message}");
+                                // Dernier recours : essayer avec le SteamID
+                                try
+                                {
+                                    if (player != null && player.IsValid)
+                                    {
+                                        Server.ExecuteCommand($"banid 0 {player.SteamID} \"Accès non autorisé\"; kickid {player.UserId}");
+                                        Console.WriteLine($"[KICK] {playerName} - Dernier recours SteamID");
+                                    }
+                                }
+                                catch (Exception steamEx)
+                                {
+                                    Console.WriteLine($"[ERROR] Toutes méthodes échouées: {steamEx.Message}");
+                                }
+                            }
                         }
                     });
                 });
