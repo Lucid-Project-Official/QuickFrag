@@ -1,12 +1,13 @@
 {
   "functions": {
     "api/steam-callback.py": {
-      "runtime": "python3.9"
+      "runtime": "python3.13"
     }
   },
+  "regions": ["fra1"],
   "env": {
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_ANON_KEY": "@supabase_anon_key", 
-    "DISCORD_WEBHOOK_URL": "@discord_webhook_url"
+    "DISCORD_TOKEN": "$DISCORD_TOKEN",
+    "SUPABASE_URL": "$SUPABASE_URL",
+    "SUPABASE_ANON_KEY": "$SUPABASE_ANON_KEY"
   }
 } 
