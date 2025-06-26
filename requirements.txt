@@ -1,0 +1,1 @@
+# Pas de dépendances ! Utilise seulement la stdlib Python 3.13.2 
