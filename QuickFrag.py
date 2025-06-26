@@ -43,7 +43,7 @@ def generate_steam_auth_url(discord_user_id):
     params = {
         "openid.ns": "http://specs.openid.net/auth/2.0",
         "openid.mode": "checkid_setup",
-        "openid.return_to": f"https://quickfrag-qrzurxmvu-linoxyrs-projects.vercel.app/api/steam-callback?token={token}&discord_id={discord_user_id}",
+        "openid.return_to": f"https://quickfrag.vercel.app/api/steam-callback?token={token}&discord_id={discord_user_id}",
         "openid.realm": "https://quickfrag.vercel.app",
         "openid.identity": "http://specs.openid.net/auth/2.0/identifier_select",
         "openid.claimed_id": "http://specs.openid.net/auth/2.0/identifier_select"
