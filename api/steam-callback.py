@@ -100,12 +100,42 @@ def update_supabase(steam_id, discord_id):
         print(f"Erreur Supabase: {e}")
         return False
 
-def send_discord_webhook(discord_id, steam_id):
-    """Envoie webhook Discord avec urllib"""
+def send_discord_message(discord_id, steam_id):
+    """Envoie message Discord direct avec l'API Discord"""
     try:
-        webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-        if not webhook_url:
+        discord_token = os.environ.get("DISCORD_TOKEN")
+        if not discord_token:
+            print("Token Discord manquant")
             return
+        
+        # Créer le DM avec l'utilisateur
+        create_dm_url = "https://discord.com/api/v10/users/@me/channels"
+        dm_data = {
+            "recipient_id": discord_id
+        }
+        
+        # Headers Discord API
+        headers = {
+            "Authorization": f"Bot {discord_token}",
+            "Content-Type": "application/json"
+        }
+        
+        # Créer le DM
+        dm_req = urllib.request.Request(create_dm_url)
+        for key, value in headers.items():
+            dm_req.add_header(key, value)
+        dm_req.data = json.dumps(dm_data).encode('utf-8')
+        
+        with urllib.request.urlopen(dm_req, timeout=10) as response:
+            dm_result = json.loads(response.read().decode('utf-8'))
+            channel_id = dm_result.get("id")
+        
+        if not channel_id:
+            print("Impossible de créer le DM")
+            return
+        
+        # Envoyer le message
+        message_url = f"https://discord.com/api/v10/channels/{channel_id}/messages"
         
         embed = {
             "title": "✅ Compte Steam lié avec succès !",
@@ -113,19 +143,20 @@ def send_discord_webhook(discord_id, steam_id):
             "color": 3066993
         }
         
-        data = {
-            "content": f"<@{discord_id}>",
+        message_data = {
             "embeds": [embed]
         }
         
-        json_data = json.dumps(data).encode('utf-8')
-        req = urllib.request.Request(webhook_url, data=json_data)
-        req.add_header("Content-Type", "application/json")
+        msg_req = urllib.request.Request(message_url)
+        for key, value in headers.items():
+            msg_req.add_header(key, value)
+        msg_req.data = json.dumps(message_data).encode('utf-8')
         
-        urllib.request.urlopen(req, timeout=10)
+        urllib.request.urlopen(msg_req, timeout=10)
+        print(f"Message Discord envoyé à {discord_id}")
         
     except Exception as e:
-        print(f"Erreur Discord: {e}")
+        print(f"Erreur Discord API: {e}")
 
 class handler(BaseHTTPRequestHandler):
     """Handler Vercel ultra simple"""
@@ -159,7 +190,7 @@ class handler(BaseHTTPRequestHandler):
                 return
             
             # Envoyer notification
-            send_discord_webhook(discord_id, steam_id)
+            send_discord_message(discord_id, steam_id)
             
             # Page de succès
             self.send_response(200)
