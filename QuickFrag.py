@@ -129,7 +129,7 @@ async def check_steam_link_required(interaction, action_description="participer"
             value=f"[**Cliquer ici pour lier votre compte Steam**]({auth_url})",
             inline=False
         )
-        embed.set_footer(text="Ce lien expire dans 30 minutes")
+        embed.set_footer(text="Ce lien expire dans 2 minutes")
         
         await interaction.followup.send(embed=embed, ephemeral=True)
         return False
@@ -144,8 +144,8 @@ async def handle_steam_callback(token, steam_response_params):
     token_data = steam_link_tokens[token]
     discord_user_id = token_data["discord_user_id"]
     
-    # Vérifier que le token n'est pas trop ancien (30 minutes max)
-    if time.time() - token_data["timestamp"] > 1800:
+    # Vérifier que le token n'est pas trop ancien (2 minutes max)
+    if time.time() - token_data["timestamp"] > 120:
         del steam_link_tokens[token]
         return False, "Token expiré"
     
