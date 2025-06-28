@@ -566,7 +566,7 @@ async def update_embed(interaction, match_id, is_modifiabled):
                     await message.edit(embed=embed)
 
 class QuitButton(discord.ui.Button):
-    def __init__(self, countdown: int = 150):
+    def __init__(self, countdown: int = 180):
         super().__init__(label=f"Quitter", style=discord.ButtonStyle.red, custom_id="leave_game")
         self.countdown = countdown
         self.message = None
@@ -581,8 +581,8 @@ class QuitButton(discord.ui.Button):
         while self.countdown > 0:
             if countdown_flags[match_id]["done"]:
                 break
-            await asyncio.sleep(1)
-            self.countdown -= 1
+            await asyncio.sleep(5)
+            self.countdown -= 5
 
         if self.countdown <= 0:
             countdown_flags[match_id]["done"] = True
@@ -1001,6 +1001,11 @@ async def on_interaction(interaction: discord.Interaction):
                     map_choiced = random.choice(list_mapName)
                     
                     PlayedMatchID = result3["match_ID"]
+                    
+                    # ARRÊTER LE COUNTDOWN D'ANNULATION
+                    if PlayedMatchID in countdown_flags:
+                        countdown_flags[PlayedMatchID]["done"] = True
+                        print(f"[INFO] Countdown d'annulation arrêté pour le match {PlayedMatchID}")
                     
                     # 1. MISE À JOUR DU STATUT DU MATCH
                     supabase.table("Matchs").update({"match_Status": 2}).eq("match_ID", PlayedMatchID).execute()
