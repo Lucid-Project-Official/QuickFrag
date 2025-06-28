@@ -575,14 +575,21 @@ class QuitButton(discord.ui.Button):
 
     async def start_countdown(self, interaction: discord.Interaction, match_id, is_modifiabled):
         if match_id not in countdown_flags:
-            countdown_flags[match_id] = {"done": False}
+            countdown_flags[match_id] = {"done": False, "game_started": False}
         
         self.message = interaction.message
         while self.countdown > 0:
-            if countdown_flags[match_id]["done"]:
+            if countdown_flags[match_id]["done"] or countdown_flags[match_id]["game_started"]:
                 break
             await asyncio.sleep(5)
             self.countdown -= 5
+
+        # Si la partie a été lancée, on arrête simplement le countdown sans annuler
+        if countdown_flags[match_id]["game_started"]:
+            print(f"[INFO] Countdown arrêté - partie lancée pour le match {match_id}")
+            if match_id in countdown_flags:
+                del countdown_flags[match_id]
+            return
 
         if self.countdown <= 0:
             countdown_flags[match_id]["done"] = True
@@ -1002,10 +1009,10 @@ async def on_interaction(interaction: discord.Interaction):
                     
                     PlayedMatchID = result3["match_ID"]
                     
-                    # ARRÊTER LE COUNTDOWN D'ANNULATION
+                    # ARRÊTER LE COUNTDOWN D'ANNULATION SANS ANNULER LA PARTIE
                     if PlayedMatchID in countdown_flags:
-                        countdown_flags[PlayedMatchID]["done"] = True
-                        print(f"[INFO] Countdown d'annulation arrêté pour le match {PlayedMatchID}")
+                        countdown_flags[PlayedMatchID]["game_started"] = True
+                        print(f"[INFO] Countdown d'annulation arrêté pour le match {PlayedMatchID} - partie lancée")
                     
                     # 1. MISE À JOUR DU STATUT DU MATCH
                     supabase.table("Matchs").update({"match_Status": 2}).eq("match_ID", PlayedMatchID).execute()
