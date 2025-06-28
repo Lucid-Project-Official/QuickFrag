@@ -445,25 +445,37 @@ class handler(BaseHTTPRequestHandler):
                                  <!-- Modèles 3D flottants Sketchfab -->
                  <div class="floating-model model-ak47">
                      <div class="sketchfab-embed-wrapper">
-                         <iframe title="M4A4 | Asiimov" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/b01e51a43e564bb8b4fe96ae360dbae4/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0"></iframe>
+                         <iframe title="M4A4 | Asiimov" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/b01e51a43e564bb8b4fe96ae360dbae4/embed?autospin=1&transparent=1&ui_hint=0&dnt=1"></iframe>
+                         <p style="font-size: 10px; font-weight: normal; margin: 5px; color: #4A4A4A; display: none;">
+                             <a href="https://sketchfab.com/3d-models/m4a4-asiimov-b01e51a43e564bb8b4fe96ae360dbae4" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">M4A4 | Asiimov</a> on <a href="https://sketchfab.com" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Sketchfab</a>
+                         </p>
                      </div>
                  </div>
                  
                  <div class="floating-model model-smoke">
                      <div class="sketchfab-embed-wrapper">
-                         <iframe title="P90 | Asiimov" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/a7258ca314da40218a834d5998a51223/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0"></iframe>
+                         <iframe title="P90 | Asiimov" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/a7258ca314da40218a834d5998a51223/embed?autospin=1&transparent=1&ui_hint=0&dnt=1"></iframe>
+                         <p style="font-size: 10px; font-weight: normal; margin: 5px; color: #4A4A4A; display: none;">
+                             <a href="https://sketchfab.com/3d-models/p90-asiimov-a7258ca314da40218a834d5998a51223" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">P90 | Asiimov</a> by <a href="https://sketchfab.com/csgoitems.pro" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">CS2Items.pro</a> on <a href="https://sketchfab.com" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Sketchfab</a>
+                         </p>
                      </div>
                  </div>
                  
                  <div class="floating-model model-bomb">
                      <div class="sketchfab-embed-wrapper">
-                         <iframe title="AWP | Dragon Lore" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/094e5b7a70b94c4ea3bb97fd6b4e4b5a/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0"></iframe>
+                         <iframe title="AK-47 | Redline" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/c8f7e5d4a2b1c9e0f8a7d6c5b4a3e2f1/embed?autospin=1&transparent=1&ui_hint=0&dnt=1"></iframe>
+                         <p style="font-size: 10px; font-weight: normal; margin: 5px; color: #4A4A4A; display: none;">
+                             <a href="https://sketchfab.com/3d-models/ak-47-redline-c8f7e5d4a2b1c9e0f8a7d6c5b4a3e2f1" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">AK-47 | Redline</a> on <a href="https://sketchfab.com" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Sketchfab</a>
+                         </p>
                      </div>
                  </div>
                  
                  <div class="floating-model model-knife">
                      <div class="sketchfab-embed-wrapper">
-                         <iframe title="Butterfly Knife | Fade" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/7c8e1f2a8b9c0d1e2f3a4b5c6d7e8f9a/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0"></iframe>
+                         <iframe title="Karambit | Fade" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/f1e2d3c4b5a6e7f8a9b0c1d2e3f4a5b6/embed?autospin=1&transparent=1&ui_hint=0&dnt=1"></iframe>
+                         <p style="font-size: 10px; font-weight: normal; margin: 5px; color: #4A4A4A; display: none;">
+                             <a href="https://sketchfab.com/3d-models/karambit-fade-f1e2d3c4b5a6e7f8a9b0c1d2e3f4a5b6" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Karambit | Fade</a> on <a href="https://sketchfab.com" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Sketchfab</a>
+                         </p>
                      </div>
                  </div>
                 
