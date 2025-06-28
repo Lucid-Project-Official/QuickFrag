@@ -546,7 +546,7 @@ class handler(BaseHTTPRequestHandler):
                                  <!-- Modèles 3D flottants -->
                  <div class="floating-model model-ak47">
                      <model-viewer
-                         src="../api/Models/m4a4-asiimov.glb"
+                         src="http://localhost:8080/api/Models/m4a4-asiimov.glb"
                          alt="M4A4 Asiimov"
                          auto-rotate
                          rotation-per-second="30deg"
@@ -559,7 +559,7 @@ class handler(BaseHTTPRequestHandler):
                  
                  <div class="floating-model model-smoke">
                      <model-viewer
-                         src="home/ubuntu/QuickFrag/api/Models/p90-asiimov.glb"
+                         src="http://localhost:8080/api/Models/p90-asiimov.glb"
                          alt="P90 Asiimov"
                          auto-rotate
                          rotation-per-second="45deg"
@@ -572,7 +572,7 @@ class handler(BaseHTTPRequestHandler):
                  
                  <div class="floating-model model-bomb">
                      <model-viewer
-                         src="home/ubuntu/QuickFrag/api/Models/ak47-redline.glb"
+                         src="http://localhost:8080/api/Models/ak47-redline.glb"
                          alt="AK-47 Redline"
                          auto-rotate
                          rotation-per-second="60deg"
@@ -585,7 +585,7 @@ class handler(BaseHTTPRequestHandler):
                  
                  <div class="floating-model model-knife">
                      <model-viewer
-                         src="home/ubuntu/QuickFrag/api/Models/karambit-fade.glb"
+                         src="http://localhost:8080/api/Models/karambit-fade.glb"
                          alt="Karambit Fade"
                          auto-rotate
                          rotation-per-second="90deg"
@@ -692,10 +692,33 @@ class handler(BaseHTTPRequestHandler):
                                  this.style.animation += ', matrixEntrance 0.5s ease-out';
                              }});
                              
-                             // Gestion d'erreur
+                             // Gestion d'erreur avec diagnostic détaillé
                              model.addEventListener('error', function() {{
-                                 console.log('Modèle 3D non chargé:', this.alt);
-                                 this.parentElement.style.display = 'none';
+                                 console.error('❌ Modèle 3D non chargé:', this.alt);
+                                 console.error('   - Chemin:', this.src);
+                                 console.error('   - Vérifiez que le fichier existe dans le dossier api/Models/');
+                                 
+                                 // Remplacer par un modèle de fallback
+                                 this.src = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+                                 this.style.filter = 'grayscale(100%) opacity(0.5)';
+                                 
+                                 // Afficher un message d'erreur visible
+                                 const errorMsg = document.createElement('div');
+                                 errorMsg.style.cssText = `
+                                     position: absolute;
+                                     top: 50%;
+                                     left: 50%;
+                                     transform: translate(-50%, -50%);
+                                     background: rgba(255, 0, 0, 0.8);
+                                     color: white;
+                                     padding: 5px 10px;
+                                     border-radius: 5px;
+                                     font-size: 12px;
+                                     z-index: 1000;
+                                 `;
+                                 errorMsg.textContent = `❌ ${{this.alt}} manquant`;
+                                 this.parentElement.style.position = 'relative';
+                                 this.parentElement.appendChild(errorMsg);
                              }});
                              
                              // Animation de lueur progressive au survol
