@@ -204,6 +204,7 @@ class handler(BaseHTTPRequestHandler):
                 <title>QuickFrag - Compte Lié</title>
                 <meta charset="utf-8">
                                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
                     
@@ -213,14 +214,16 @@ class handler(BaseHTTPRequestHandler):
                         box-sizing: border-box;
                     }}
                     
-                    body {{
-                        font-family: 'Orbitron', monospace;
-                        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e  50%, #0f3460 75%, #003366 100%);
-                        min-height: 100vh;
-                        overflow-x: hidden;
-                        position: relative;
-                        color: #ffffff;
-                    }}
+                                         body {{
+                         font-family: 'Orbitron', monospace;
+                         background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e  50%, #0f3460 75%, #003366 100%);
+                         min-height: 100vh;
+                         overflow-x: hidden;
+                         position: relative;
+                         color: #ffffff;
+                         opacity: 0;
+                         animation: pageEntrance 2s ease-out forwards;
+                     }}
                     
                     .stars {{
                         position: fixed;
@@ -241,10 +244,90 @@ class handler(BaseHTTPRequestHandler):
                         animation: twinkle 3s infinite alternate;
                     }}
                     
-                    @keyframes twinkle {{
-                        0% {{ opacity: 0.3; }}
-                        100% {{ opacity: 1; }}
-                    }}
+                                         @keyframes twinkle {{
+                         0% {{ opacity: 0.3; }}
+                         100% {{ opacity: 1; }}
+                     }}
+                     
+                     @keyframes pageEntrance {{
+                         0% {{ 
+                             opacity: 0;
+                             transform: scale(0.8);
+                             filter: blur(20px);
+                         }}
+                         50% {{
+                             opacity: 0.7;
+                             transform: scale(1.05);
+                             filter: blur(5px);
+                         }}
+                         100% {{ 
+                             opacity: 1;
+                             transform: scale(1);
+                             filter: blur(0);
+                         }}
+                     }}
+                     
+                     @keyframes slideInFromTop {{
+                         0% {{
+                             opacity: 0;
+                             transform: translateY(-100px) rotateX(-90deg);
+                         }}
+                         100% {{
+                             opacity: 1;
+                             transform: translateY(0) rotateX(0);
+                         }}
+                     }}
+                     
+                     @keyframes slideInFromBottom {{
+                         0% {{
+                             opacity: 0;
+                             transform: translateY(100px) scale(0.5);
+                         }}
+                         100% {{
+                             opacity: 1;
+                             transform: translateY(0) scale(1);
+                         }}
+                     }}
+                     
+                     @keyframes slideInFromLeft {{
+                         0% {{
+                             opacity: 0;
+                             transform: translateX(-200px) rotateY(-45deg);
+                         }}
+                         100% {{
+                             opacity: 1;
+                             transform: translateX(0) rotateY(0);
+                         }}
+                     }}
+                     
+                     @keyframes slideInFromRight {{
+                         0% {{
+                             opacity: 0;
+                             transform: translateX(200px) rotateY(45deg);
+                         }}
+                         100% {{
+                             opacity: 1;
+                             transform: translateX(0) rotateY(0);
+                         }}
+                     }}
+                     
+                     @keyframes matrixEntrance {{
+                         0% {{
+                             opacity: 0;
+                             transform: scale(0) rotate(180deg);
+                             filter: hue-rotate(180deg) brightness(3);
+                         }}
+                         50% {{
+                             opacity: 0.8;
+                             transform: scale(1.2) rotate(0deg);
+                             filter: hue-rotate(90deg) brightness(2);
+                         }}
+                         100% {{
+                             opacity: 1;
+                             transform: scale(1) rotate(0deg);
+                             filter: hue-rotate(0deg) brightness(1);
+                         }}
+                     }}
                     
                     .main-container {{
                         position: relative;
@@ -257,57 +340,69 @@ class handler(BaseHTTPRequestHandler):
                         padding: 20px;
                     }}
                     
-                    .success-card {{
-                        background: rgba(255, 255, 255, 0.05);
-                        backdrop-filter: blur(20px);
-                        border: 1px solid rgba(0, 255, 255, 0.3);
-                        border-radius: 20px;
-                        padding: 40px;
-                        max-width: 600px;
-                        width: 100%;
-                        box-shadow: 
-                            0 8px 32px rgba(0, 255, 255, 0.1),
-                            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-                        position: relative;
-                        animation: cardGlow 2s ease-in-out infinite alternate;
-                    }}
+                                         .success-card {{
+                         background: rgba(255, 255, 255, 0.05);
+                         backdrop-filter: blur(20px);
+                         border: 1px solid rgba(0, 255, 255, 0.3);
+                         border-radius: 20px;
+                         padding: 40px;
+                         max-width: 600px;
+                         width: 100%;
+                         box-shadow: 
+                             0 8px 32px rgba(0, 255, 255, 0.1),
+                             inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                         position: relative;
+                         opacity: 0;
+                         animation: slideInFromBottom 1.5s ease-out 0.5s forwards,
+                                   cardGlow 2s ease-in-out 2s infinite alternate;
+                     }}
                     
                     @keyframes cardGlow {{
                         0% {{ box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1); }}
                         100% {{ box-shadow: 0 8px 32px rgba(0, 255, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2); }}
                     }}
                     
-                    .success-title {{
-                        font-size: 2.5rem;
-                        font-weight: 900;
-                        color: #00ffff;
-                        margin-bottom: 20px;
-                        text-align: center;
-                        text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-                        animation: titlePulse 2s ease-in-out infinite alternate;
-                    }}
+                                         .success-title {{
+                         font-size: 2.5rem;
+                         font-weight: 900;
+                         color: #00ffff;
+                         margin-bottom: 20px;
+                         text-align: center;
+                         text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+                         opacity: 0;
+                         animation: slideInFromTop 1.2s ease-out 1s forwards,
+                                   titlePulse 2s ease-in-out 2.5s infinite alternate;
+                     }}
                     
                     @keyframes titlePulse {{
                         0% {{ text-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }}
                         100% {{ text-shadow: 0 0 30px rgba(0, 255, 255, 0.8); }}
                     }}
                     
-                    .success-subtitle {{
-                        font-size: 1.2rem;
-                        color: #ffffff;
-                        margin-bottom: 30px;
-                        text-align: center;
-                        opacity: 0.9;
-                    }}
-                    
-                    .steam-info {{
-                        background: rgba(0, 255, 255, 0.1);
-                        border: 1px solid rgba(0, 255, 255, 0.3);
-                        border-radius: 10px;
-                        padding: 20px;
-                        margin: 20px 0;
-                        text-align: center;
-                    }}
+                                         .success-subtitle {{
+                         font-size: 1.2rem;
+                         color: #ffffff;
+                         margin-bottom: 30px;
+                         text-align: center;
+                         opacity: 0;
+                         animation: slideInFromTop 1.2s ease-out 1.3s forwards;
+                     }}
+                     
+                     .steam-info {{
+                         background: rgba(0, 255, 255, 0.1);
+                         border: 1px solid rgba(0, 255, 255, 0.3);
+                         border-radius: 10px;
+                         padding: 20px;
+                         margin: 20px 0;
+                         text-align: center;
+                         opacity: 0;
+                         animation: matrixEntrance 1.5s ease-out 1.8s forwards;
+                     }}
+                     
+                     .success-card p {{
+                         opacity: 0;
+                         animation: slideInFromBottom 1s ease-out 2.2s forwards;
+                     }}
                     
                     .steam-id {{
                         font-size: 1.5rem;
@@ -327,37 +422,45 @@ class handler(BaseHTTPRequestHandler):
                         z-index: 5;
                     }}
                     
-                    .model-ak47 {{
-                        top: 20%;
-                        right: 10%;
-                        width: 200px;
-                        height: 200px;
-                        animation: floatAK 15s linear infinite;
-                    }}
-                    
-                    .model-smoke {{
-                        top: 60%;
-                        left: 5%;
-                        width: 150px;
-                        height: 150px;
-                        animation: floatSmoke 20s linear infinite;
-                    }}
-                    
-                    .model-bomb {{
-                        top: 30%;
-                        left: 15%;
-                        width: 120px;
-                        height: 120px;
-                        animation: floatBomb 18s linear infinite;
-                    }}
-                    
-                    .model-knife {{
-                        top: 70%;
-                        right: 20%;
-                        width: 100px;
-                        height: 100px;
-                        animation: floatKnife 12s linear infinite;
-                    }}
+                                         .model-ak47 {{
+                         top: 20%;
+                         right: 10%;
+                         width: 200px;
+                         height: 200px;
+                         opacity: 0;
+                         animation: slideInFromRight 2s ease-out 2s forwards,
+                                   floatAK 15s linear 4s infinite;
+                     }}
+                     
+                     .model-smoke {{
+                         top: 60%;
+                         left: 5%;
+                         width: 150px;
+                         height: 150px;
+                         opacity: 0;
+                         animation: slideInFromLeft 2s ease-out 2.5s forwards,
+                                   floatSmoke 20s linear 4.5s infinite;
+                     }}
+                     
+                     .model-bomb {{
+                         top: 30%;
+                         left: 15%;
+                         width: 120px;
+                         height: 120px;
+                         opacity: 0;
+                         animation: matrixEntrance 2.5s ease-out 3s forwards,
+                                   floatBomb 18s linear 5.5s infinite;
+                     }}
+                     
+                     .model-knife {{
+                         top: 70%;
+                         right: 20%;
+                         width: 100px;
+                         height: 100px;
+                         opacity: 0;
+                         animation: slideInFromBottom 2s ease-out 3.5s forwards,
+                                   floatKnife 12s linear 5.5s infinite;
+                     }}
                     
                     @keyframes floatAK {{
                         0% {{ transform: translateY(0px) rotate(0deg); }}
@@ -390,41 +493,39 @@ class handler(BaseHTTPRequestHandler):
                         100% {{ transform: translateY(0px) rotate(360deg) scale(1); }}
                     }}
                     
-                                         .sketchfab-embed-wrapper {{
+                                         model-viewer {{
                          width: 100%;
                          height: 100%;
-                         position: relative;
+                         border-radius: 15px;
+                         box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
+                         --poster-color: transparent;
+                         --progress-bar-color: #00ffff;
+                         --progress-mask: rgba(0, 255, 255, 0.3);
+                         filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.2));
+                     }}
+                    
+                                         .close-button {{
+                         margin-top: 30px;
+                         padding: 15px 30px;
+                         background: linear-gradient(45deg, #00ffff, #0099cc);
+                         border: none;
+                         border-radius: 50px;
+                         color: #000;
+                         font-family: 'Orbitron', monospace;
+                         font-weight: 700;
+                         font-size: 1.1rem;
+                         cursor: pointer;
+                         transition: all 0.3s ease;
+                         box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
                          opacity: 0;
-                         transition: opacity 1s ease-in-out;
+                         animation: slideInFromBottom 1.2s ease-out 2.5s forwards;
                      }}
                      
-                     .sketchfab-embed-wrapper iframe {{
-                         width: 100%;
-                         height: 100%;
-                         border: none;
-                         border-radius: 10px;
-                         box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+                     .close-button:hover {{
+                         transform: translateY(-2px) scale(1.05);
+                         box-shadow: 0 8px 25px rgba(0, 255, 255, 0.7);
+                         background: linear-gradient(45deg, #00ffff, #ff6b6b);
                      }}
-                    
-                    .close-button {{
-                        margin-top: 30px;
-                        padding: 15px 30px;
-                        background: linear-gradient(45deg, #00ffff, #0099cc);
-                        border: none;
-                        border-radius: 50px;
-                        color: #000;
-                        font-family: 'Orbitron', monospace;
-                        font-weight: 700;
-                        font-size: 1.1rem;
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                        box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
-                    }}
-                    
-                    .close-button:hover {{
-                        transform: translateY(-2px);
-                        box-shadow: 0 6px 20px rgba(0, 255, 255, 0.5);
-                    }}
                     
                     @media (max-width: 768px) {{
                         .floating-model {{
@@ -442,41 +543,57 @@ class handler(BaseHTTPRequestHandler):
             <body>
                 <div class="stars"></div>
                 
-                                 <!-- Modèles 3D flottants Sketchfab -->
+                                 <!-- Modèles 3D flottants -->
                  <div class="floating-model model-ak47">
-                     <div class="sketchfab-embed-wrapper">
-                         <iframe title="M4A4 | Asiimov" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/b01e51a43e564bb8b4fe96ae360dbae4/embed?autospin=1&transparent=1&ui_hint=0&dnt=1"></iframe>
-                         <p style="font-size: 10px; font-weight: normal; margin: 5px; color: #4A4A4A; display: none;">
-                             <a href="https://sketchfab.com/3d-models/m4a4-asiimov-b01e51a43e564bb8b4fe96ae360dbae4" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">M4A4 | Asiimov</a> on <a href="https://sketchfab.com" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Sketchfab</a>
-                         </p>
-                     </div>
+                     <model-viewer
+                         src="../api/Models/m4a4-asiimov.glb"
+                         alt="M4A4 Asiimov"
+                         auto-rotate
+                         rotation-per-second="30deg"
+                         camera-controls
+                         disable-zoom
+                         disable-pan
+                         loading="eager">
+                     </model-viewer>
                  </div>
                  
                  <div class="floating-model model-smoke">
-                     <div class="sketchfab-embed-wrapper">
-                         <iframe title="P90 | Asiimov" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/a7258ca314da40218a834d5998a51223/embed?autospin=1&transparent=1&ui_hint=0&dnt=1"></iframe>
-                         <p style="font-size: 10px; font-weight: normal; margin: 5px; color: #4A4A4A; display: none;">
-                             <a href="https://sketchfab.com/3d-models/p90-asiimov-a7258ca314da40218a834d5998a51223" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">P90 | Asiimov</a> by <a href="https://sketchfab.com/csgoitems.pro" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">CS2Items.pro</a> on <a href="https://sketchfab.com" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Sketchfab</a>
-                         </p>
-                     </div>
+                     <model-viewer
+                         src="../api/Models/p90-asiimov.glb"
+                         alt="P90 Asiimov"
+                         auto-rotate
+                         rotation-per-second="45deg"
+                         camera-controls
+                         disable-zoom
+                         disable-pan
+                         loading="eager">
+                     </model-viewer>
                  </div>
                  
                  <div class="floating-model model-bomb">
-                     <div class="sketchfab-embed-wrapper">
-                         <iframe title="AK-47 | Redline" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/c8f7e5d4a2b1c9e0f8a7d6c5b4a3e2f1/embed?autospin=1&transparent=1&ui_hint=0&dnt=1"></iframe>
-                         <p style="font-size: 10px; font-weight: normal; margin: 5px; color: #4A4A4A; display: none;">
-                             <a href="https://sketchfab.com/3d-models/ak-47-redline-c8f7e5d4a2b1c9e0f8a7d6c5b4a3e2f1" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">AK-47 | Redline</a> on <a href="https://sketchfab.com" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Sketchfab</a>
-                         </p>
-                     </div>
+                     <model-viewer
+                         src="../api/Models/ak47-redline.glb"
+                         alt="AK-47 Redline"
+                         auto-rotate
+                         rotation-per-second="60deg"
+                         camera-controls
+                         disable-zoom
+                         disable-pan
+                         loading="eager">
+                     </model-viewer>
                  </div>
                  
                  <div class="floating-model model-knife">
-                     <div class="sketchfab-embed-wrapper">
-                         <iframe title="Karambit | Fade" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/f1e2d3c4b5a6e7f8a9b0c1d2e3f4a5b6/embed?autospin=1&transparent=1&ui_hint=0&dnt=1"></iframe>
-                         <p style="font-size: 10px; font-weight: normal; margin: 5px; color: #4A4A4A; display: none;">
-                             <a href="https://sketchfab.com/3d-models/karambit-fade-f1e2d3c4b5a6e7f8a9b0c1d2e3f4a5b6" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Karambit | Fade</a> on <a href="https://sketchfab.com" target="_blank" rel="nofollow" style="font-weight: bold; color: #1CAAD9;">Sketchfab</a>
-                         </p>
-                     </div>
+                     <model-viewer
+                         src="../api/Models/karambit-fade.glb"
+                         alt="Karambit Fade"
+                         auto-rotate
+                         rotation-per-second="90deg"
+                         camera-controls
+                         disable-zoom
+                         disable-pan
+                         loading="eager">
+                     </model-viewer>
                  </div>
                 
                 <div class="main-container">
@@ -531,32 +648,100 @@ class handler(BaseHTTPRequestHandler):
                          }}
                      }}
                      
-                     // Gestion des erreurs de modèles 3D et chargement
+                     // Gestion des animations d'entrée et modèles 3D
                      document.addEventListener('DOMContentLoaded', function() {{
-                         createStars();
+                         // Créer les étoiles avec délai
+                         setTimeout(createStars, 500);
                          
-                         // Améliorer le chargement des modèles 3D Sketchfab
-                         const modelWrappers = document.querySelectorAll('.sketchfab-embed-wrapper');
-                         modelWrappers.forEach((wrapper, index) => {{
-                             // Ajouter un délai pour chaque modèle
-                             setTimeout(() => {{
-                                 wrapper.style.opacity = '1';
-                             }}, index * 1000);
-                             
-                             const iframe = wrapper.querySelector('iframe');
-                             if (iframe) {{
-                                 // Gestion du chargement de l'iframe
-                                 iframe.addEventListener('load', function() {{
-                                     console.log('Modèle Sketchfab chargé:', this.title);
-                                 }});
+                         // Audio feedback (optionnel)
+                         const playEntranceSound = () => {{
+                             try {{
+                                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                                 const oscillator = audioContext.createOscillator();
+                                 const gainNode = audioContext.createGain();
                                  
-                                 // Gestion d'erreur
-                                 iframe.addEventListener('error', function() {{
-                                     console.log('Modèle Sketchfab non chargé:', this.title);
-                                     wrapper.style.display = 'none';
-                                 }});
+                                 oscillator.connect(gainNode);
+                                 gainNode.connect(audioContext.destination);
+                                 
+                                 oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+                                 oscillator.frequency.exponentialRampToValueAtTime(440, audioContext.currentTime + 0.5);
+                                 
+                                 gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                                 
+                                 oscillator.start(audioContext.currentTime);
+                                 oscillator.stop(audioContext.currentTime + 0.5);
+                             }} catch(e) {{
+                                 console.log('Audio non supporté');
                              }}
+                         }};
+                         
+                         // Déclencher le son d'entrée après 1 seconde
+                         setTimeout(playEntranceSound, 1000);
+                         
+                         // Gestion des modèles 3D avec effects d'entrée
+                         const models = document.querySelectorAll('model-viewer');
+                         models.forEach((model, index) => {{
+                             // Gestion du chargement
+                             model.addEventListener('load', function() {{
+                                 console.log('Modèle 3D chargé:', this.alt);
+                                 // Ajouter un effet de lueur supplémentaire quand le modèle est chargé
+                                 this.style.filter = 'drop-shadow(0 0 25px rgba(0, 255, 255, 0.5))';
+                                 
+                                 // Effet de particules au chargement
+                                 this.style.animation += ', matrixEntrance 0.5s ease-out';
+                             }});
+                             
+                             // Gestion d'erreur
+                             model.addEventListener('error', function() {{
+                                 console.log('Modèle 3D non chargé:', this.alt);
+                                 this.parentElement.style.display = 'none';
+                             }});
+                             
+                             // Animation de lueur progressive au survol
+                             model.addEventListener('mouseenter', function() {{
+                                 this.style.transform = 'scale(1.1)';
+                                 this.style.filter = 'drop-shadow(0 0 40px rgba(0, 255, 255, 0.8))';
+                                 this.style.transition = 'all 0.3s ease';
+                             }});
+                             
+                             model.addEventListener('mouseleave', function() {{
+                                 this.style.transform = 'scale(1)';
+                                 this.style.filter = 'drop-shadow(0 0 25px rgba(0, 255, 255, 0.2))';
+                             }});
                          }});
+                         
+                         // Effet de scan de ligne futuriste
+                         const createScanLine = () => {{
+                             const scanLine = document.createElement('div');
+                             scanLine.style.cssText = `
+                                 position: fixed;
+                                 top: 0;
+                                 left: 0;
+                                 width: 100%;
+                                 height: 2px;
+                                 background: linear-gradient(90deg, transparent, #00ffff, transparent);
+                                 z-index: 9999;
+                                 animation: scanDown 3s ease-out;
+                             `;
+                             document.body.appendChild(scanLine);
+                             setTimeout(() => scanLine.remove(), 3000);
+                         }};
+                         
+                         // Ajouter le style de scan
+                         const style = document.createElement('style');
+                         style.textContent = `
+                             @keyframes scanDown {{
+                                 0% {{ top: -2px; opacity: 0; }}
+                                 10% {{ opacity: 1; }}
+                                 90% {{ opacity: 1; }}
+                                 100% {{ top: 100vh; opacity: 0; }}
+                             }}
+                         `;
+                         document.head.appendChild(style);
+                         
+                         // Déclencher le scan après 2 secondes
+                         setTimeout(createScanLine, 2000);
                          
                          // Auto-fermeture après 30 secondes
                          let countdownTimer;
