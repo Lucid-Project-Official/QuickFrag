@@ -559,7 +559,7 @@ class handler(BaseHTTPRequestHandler):
                  
                  <div class="floating-model model-smoke">
                      <model-viewer
-                         src="../api/Models/p90-asiimov.glb"
+                         src="home/ubuntu/QuickFrag/api/Models/p90-asiimov.glb"
                          alt="P90 Asiimov"
                          auto-rotate
                          rotation-per-second="45deg"
@@ -572,7 +572,7 @@ class handler(BaseHTTPRequestHandler):
                  
                  <div class="floating-model model-bomb">
                      <model-viewer
-                         src="../api/Models/ak47-redline.glb"
+                         src="home/ubuntu/QuickFrag/api/Models/ak47-redline.glb"
                          alt="AK-47 Redline"
                          auto-rotate
                          rotation-per-second="60deg"
@@ -585,7 +585,7 @@ class handler(BaseHTTPRequestHandler):
                  
                  <div class="floating-model model-knife">
                      <model-viewer
-                         src="../api/Models/karambit-fade.glb"
+                         src="home/ubuntu/QuickFrag/api/Models/karambit-fade.glb"
                          alt="Karambit Fade"
                          auto-rotate
                          rotation-per-second="90deg"
