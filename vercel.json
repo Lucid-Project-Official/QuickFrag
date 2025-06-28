@@ -4,36 +4,5 @@
     "api/*.py": {
       "runtime": "python3.13"
     }
-  },
-  "routes": [
-    {
-      "src": "/Models/(.*)",
-      "dest": "/public/Models/$1",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
-        "Access-Control-Allow-Headers": "*",
-        "Content-Type": "model/gltf-binary"
-      }
-    }
-  ],
-  "headers": [
-    {
-      "source": "/Models/(.*\\.glb)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "model/gltf-binary"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    }
-  ]
+  }
 } 
