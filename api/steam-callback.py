@@ -203,8 +203,7 @@ class handler(BaseHTTPRequestHandler):
             <head>
                 <title>QuickFrag - Compte Lié</title>
                 <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+                                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
                     
@@ -391,12 +390,20 @@ class handler(BaseHTTPRequestHandler):
                         100% {{ transform: translateY(0px) rotate(360deg) scale(1); }}
                     }}
                     
-                                         model-viewer {{
+                                         .sketchfab-embed-wrapper {{
                          width: 100%;
                          height: 100%;
+                         position: relative;
                          opacity: 0;
                          transition: opacity 1s ease-in-out;
-                         --poster-color: transparent;
+                     }}
+                     
+                     .sketchfab-embed-wrapper iframe {{
+                         width: 100%;
+                         height: 100%;
+                         border: none;
+                         border-radius: 10px;
+                         box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
                      }}
                     
                     .close-button {{
@@ -435,53 +442,29 @@ class handler(BaseHTTPRequestHandler):
             <body>
                 <div class="stars"></div>
                 
-                                 <!-- Modèles 3D flottants -->
+                                 <!-- Modèles 3D flottants Sketchfab -->
                  <div class="floating-model model-ak47">
-                     <model-viewer
-                         src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
-                         alt="M4A4 Asiimov"
-                         auto-rotate
-                         rotation-per-second="30deg"
-                         camera-controls
-                         disable-zoom
-                         disable-pan>
-                     </model-viewer>
+                     <div class="sketchfab-embed-wrapper">
+                         <iframe title="M4A4 | Asiimov" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/b01e51a43e564bb8b4fe96ae360dbae4/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0"></iframe>
+                     </div>
                  </div>
                  
                  <div class="floating-model model-smoke">
-                     <model-viewer
-                         src="https://modelviewer.dev/shared-assets/models/RobotExpressive.glb"
-                         alt="Arme CS2"
-                         auto-rotate
-                         rotation-per-second="45deg"
-                         camera-controls
-                         disable-zoom
-                         disable-pan>
-                     </model-viewer>
+                     <div class="sketchfab-embed-wrapper">
+                         <iframe title="P90 | Asiimov" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/a7258ca314da40218a834d5998a51223/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0"></iframe>
+                     </div>
                  </div>
                  
                  <div class="floating-model model-bomb">
-                     <model-viewer
-                         src="https://modelviewer.dev/shared-assets/models/MaterialsVariantsShoe.glb"
-                         alt="Équipement CS2"
-                         auto-rotate
-                         rotation-per-second="60deg"
-                         camera-controls
-                         disable-zoom
-                         disable-pan>
-                     </model-viewer>
+                     <div class="sketchfab-embed-wrapper">
+                         <iframe title="AWP | Dragon Lore" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/094e5b7a70b94c4ea3bb97fd6b4e4b5a/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0"></iframe>
+                     </div>
                  </div>
                  
                  <div class="floating-model model-knife">
-                     <model-viewer
-                         src="https://modelviewer.dev/shared-assets/models/Horse.glb"
-                         alt="Accessoire CS2"
-                         auto-rotate
-                         rotation-per-second="90deg"
-                         camera-controls
-                         disable-zoom
-                         disable-pan>
-                     </model-viewer>
+                     <div class="sketchfab-embed-wrapper">
+                         <iframe title="Butterfly Knife | Fade" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/7c8e1f2a8b9c0d1e2f3a4b5c6d7e8f9a/embed?autostart=1&ui_controls=0&ui_infos=0&ui_inspector=0&ui_stop=0&ui_watermark=0&ui_watermark_link=0"></iframe>
+                     </div>
                  </div>
                 
                 <div class="main-container">
@@ -540,24 +523,27 @@ class handler(BaseHTTPRequestHandler):
                      document.addEventListener('DOMContentLoaded', function() {{
                          createStars();
                          
-                         // Améliorer le chargement des modèles 3D
-                         const models = document.querySelectorAll('model-viewer');
-                         models.forEach((model, index) => {{
+                         // Améliorer le chargement des modèles 3D Sketchfab
+                         const modelWrappers = document.querySelectorAll('.sketchfab-embed-wrapper');
+                         modelWrappers.forEach((wrapper, index) => {{
                              // Ajouter un délai pour chaque modèle
                              setTimeout(() => {{
-                                 model.style.opacity = '1';
-                             }}, index * 500);
+                                 wrapper.style.opacity = '1';
+                             }}, index * 1000);
                              
-                             // Gestion d'erreur
-                             model.addEventListener('error', function() {{
-                                 console.log('Modèle 3D non chargé:', this.alt);
-                                 this.style.display = 'none';
-                             }});
-                             
-                             // Événement de chargement réussi
-                             model.addEventListener('load', function() {{
-                                 console.log('Modèle 3D chargé:', this.alt);
-                             }});
+                             const iframe = wrapper.querySelector('iframe');
+                             if (iframe) {{
+                                 // Gestion du chargement de l'iframe
+                                 iframe.addEventListener('load', function() {{
+                                     console.log('Modèle Sketchfab chargé:', this.title);
+                                 }});
+                                 
+                                 // Gestion d'erreur
+                                 iframe.addEventListener('error', function() {{
+                                     console.log('Modèle Sketchfab non chargé:', this.title);
+                                     wrapper.style.display = 'none';
+                                 }});
+                             }}
                          }});
                          
                          // Auto-fermeture après 30 secondes
