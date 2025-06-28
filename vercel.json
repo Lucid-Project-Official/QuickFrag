@@ -2,7 +2,7 @@
   "regions": ["fra1"],
   "functions": {
     "api/*.py": {
-      "runtime": "python3.13"
+      "runtime": "python3.9"
     }
   }
 } 
