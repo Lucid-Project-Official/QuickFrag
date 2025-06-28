@@ -1,6 +1,7 @@
 """
 🎯 QuickFrag Steam Callback - Vercel Function Ultra Simple
 Compatible Python 3.13.2 - Pas de Flask !
+Version: 2.0 - Responsive & Mobile Optimized
 """
 
 import json
