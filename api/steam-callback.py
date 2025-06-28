@@ -391,11 +391,13 @@ class handler(BaseHTTPRequestHandler):
                         100% {{ transform: translateY(0px) rotate(360deg) scale(1); }}
                     }}
                     
-                    model-viewer {{
-                        width: 100%;
-                        height: 100%;
-                        --poster-color: transparent;
-                    }}
+                                         model-viewer {{
+                         width: 100%;
+                         height: 100%;
+                         opacity: 0;
+                         transition: opacity 1s ease-in-out;
+                         --poster-color: transparent;
+                     }}
                     
                     .close-button {{
                         margin-top: 30px;
@@ -433,118 +435,161 @@ class handler(BaseHTTPRequestHandler):
             <body>
                 <div class="stars"></div>
                 
-                <!-- Modèles 3D flottants -->
-                <div class="floating-model model-ak47">
-                    <model-viewer
-                        src="https://cdn.sketchfab.com/models/1e37b9b3a4f5468488e8a3a8bd1f1d6a/file.glb"
-                        alt="AK-47"
-                        auto-rotate
-                        rotation-per-second="30deg"
-                        camera-controls
-                        disable-zoom
-                        disable-pan>
-                    </model-viewer>
-                </div>
-                
-                <div class="floating-model model-smoke">
-                    <model-viewer
-                        src="https://cdn.sketchfab.com/models/5d26e3b4e23f4e7e8b2d7f4a6c1b8f9e/file.glb"
-                        alt="Smoke Grenade"
-                        auto-rotate
-                        rotation-per-second="45deg"
-                        camera-controls
-                        disable-zoom
-                        disable-pan>
-                    </model-viewer>
-                </div>
-                
-                <div class="floating-model model-bomb">
-                    <model-viewer
-                        src="https://cdn.sketchfab.com/models/7f8a2b4c5d6e9f0a1b2c3d4e5f6a7b8c/file.glb"
-                        alt="C4 Bomb"
-                        auto-rotate
-                        rotation-per-second="60deg"
-                        camera-controls
-                        disable-zoom
-                        disable-pan>
-                    </model-viewer>
-                </div>
-                
-                <div class="floating-model model-knife">
-                    <model-viewer
-                        src="https://cdn.sketchfab.com/models/9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b/file.glb"
-                        alt="CS2 Knife"
-                        auto-rotate
-                        rotation-per-second="90deg"
-                        camera-controls
-                        disable-zoom
-                        disable-pan>
-                    </model-viewer>
-                </div>
+                                 <!-- Modèles 3D flottants -->
+                 <div class="floating-model model-ak47">
+                     <model-viewer
+                         src="https://modelviewer.dev/shared-assets/models/Astronaut.glb"
+                         alt="M4A4 Asiimov"
+                         auto-rotate
+                         rotation-per-second="30deg"
+                         camera-controls
+                         disable-zoom
+                         disable-pan>
+                     </model-viewer>
+                 </div>
+                 
+                 <div class="floating-model model-smoke">
+                     <model-viewer
+                         src="https://modelviewer.dev/shared-assets/models/RobotExpressive.glb"
+                         alt="Arme CS2"
+                         auto-rotate
+                         rotation-per-second="45deg"
+                         camera-controls
+                         disable-zoom
+                         disable-pan>
+                     </model-viewer>
+                 </div>
+                 
+                 <div class="floating-model model-bomb">
+                     <model-viewer
+                         src="https://modelviewer.dev/shared-assets/models/MaterialsVariantsShoe.glb"
+                         alt="Équipement CS2"
+                         auto-rotate
+                         rotation-per-second="60deg"
+                         camera-controls
+                         disable-zoom
+                         disable-pan>
+                     </model-viewer>
+                 </div>
+                 
+                 <div class="floating-model model-knife">
+                     <model-viewer
+                         src="https://modelviewer.dev/shared-assets/models/Horse.glb"
+                         alt="Accessoire CS2"
+                         auto-rotate
+                         rotation-per-second="90deg"
+                         camera-controls
+                         disable-zoom
+                         disable-pan>
+                     </model-viewer>
+                 </div>
                 
                 <div class="main-container">
                     <div class="success-card">
                         <h1 class="success-title">⚡ CONNEXION ÉTABLIE ⚡</h1>
                         <p class="success-subtitle">Synchronisation Steam ↔ Discord complétée</p>
                         
-                        <div class="steam-info">
-                            <div class="steam-id">Steam ID: {steam_id}</div>
-                            <div class="discord-info">🎮 Prêt pour QuickFrag CS2</div>
-                        </div>
+                                                 <div class="steam-info">
+                             <div class="steam-id">Steam ID: {steam_id}</div>
+                             <div class="discord-info">🎮 Prêt pour QuickFrag</div>
+                         </div>
+                         
+                         <p style="margin: 20px 0; opacity: 0.8;">
+                             ✅ Profil Discord mis à jour<br>
+                             ✅ Accès aux serveurs activé<br>
+                             ✅ Système de rang initialisé<br>
+                             ✅ ELO de départ: 1000 points
+                         </p>
                         
-                        <p style="margin: 20px 0; opacity: 0.8;">
-                            ✅ Profil Discord mis à jour<br>
-                            ✅ Accès aux serveurs CS2 activé<br>
-                            ✅ Système de rang initialisé<br>
-                            ✅ ELO de départ: 1000 points
-                        </p>
-                        
-                        <button class="close-button" onclick="window.close()">
-                            FERMER LA FENÊTRE
-                        </button>
+                                                 <button class="close-button" onclick="closeWindow()">
+                             FERMER LA FENÊTRE
+                         </button>
                     </div>
                 </div>
                 
-                <script>
-                    // Génération des étoiles
-                    function createStars() {{
-                        const starsContainer = document.querySelector('.stars');
-                        const starCount = 100;
-                        
-                        for (let i = 0; i < starCount; i++) {{
-                            const star = document.createElement('div');
-                            star.className = 'star';
-                            star.style.left = Math.random() * 100 + '%';
-                            star.style.top = Math.random() * 100 + '%';
-                            star.style.animationDelay = Math.random() * 3 + 's';
-                            starsContainer.appendChild(star);
-                        }}
-                    }}
-                    
-                    // Gestion des erreurs de modèles 3D
-                    document.addEventListener('DOMContentLoaded', function() {{
-                        createStars();
-                        
-                        // Fallback si les modèles 3D ne se chargent pas
-                        const models = document.querySelectorAll('model-viewer');
-                        models.forEach(model => {{
-                            model.addEventListener('error', function() {{
-                                this.style.display = 'none';
-                            }});
-                        }});
-                        
-                        // Auto-fermeture après 30 secondes
-                        setTimeout(() => {{
-                            const button = document.querySelector('.close-button');
-                            button.style.animation = 'cardGlow 0.5s ease-in-out infinite alternate';
-                            button.textContent = 'FERMETURE AUTO DANS 10S';
-                            
-                            setTimeout(() => {{
-                                window.close();
-                            }}, 10000);
-                        }}, 20000);
-                    }});
-                </script>
+                                 <script>
+                     // Génération des étoiles
+                     function createStars() {{
+                         const starsContainer = document.querySelector('.stars');
+                         const starCount = 100;
+                         
+                         for (let i = 0; i < starCount; i++) {{
+                             const star = document.createElement('div');
+                             star.className = 'star';
+                             star.style.left = Math.random() * 100 + '%';
+                             star.style.top = Math.random() * 100 + '%';
+                             star.style.animationDelay = Math.random() * 3 + 's';
+                             starsContainer.appendChild(star);
+                         }}
+                     }}
+                     
+                     // Fonction de fermeture améliorée
+                     function closeWindow() {{
+                         // Essayer plusieurs méthodes de fermeture
+                         if (window.opener) {{
+                             window.close();
+                         }} else {{
+                             // Fallback : rediriger vers une page vide ou afficher un message
+                             if (confirm('Fermer cet onglet ?')) {{
+                                 window.open('', '_self').close();
+                             }}
+                         }}
+                     }}
+                     
+                     // Gestion des erreurs de modèles 3D et chargement
+                     document.addEventListener('DOMContentLoaded', function() {{
+                         createStars();
+                         
+                         // Améliorer le chargement des modèles 3D
+                         const models = document.querySelectorAll('model-viewer');
+                         models.forEach((model, index) => {{
+                             // Ajouter un délai pour chaque modèle
+                             setTimeout(() => {{
+                                 model.style.opacity = '1';
+                             }}, index * 500);
+                             
+                             // Gestion d'erreur
+                             model.addEventListener('error', function() {{
+                                 console.log('Modèle 3D non chargé:', this.alt);
+                                 this.style.display = 'none';
+                             }});
+                             
+                             // Événement de chargement réussi
+                             model.addEventListener('load', function() {{
+                                 console.log('Modèle 3D chargé:', this.alt);
+                             }});
+                         }});
+                         
+                         // Auto-fermeture après 30 secondes
+                         let countdownTimer;
+                         setTimeout(() => {{
+                             const button = document.querySelector('.close-button');
+                             let countdown = 10;
+                             
+                             button.style.animation = 'cardGlow 0.5s ease-in-out infinite alternate';
+                             
+                             countdownTimer = setInterval(() => {{
+                                 button.textContent = `FERMETURE AUTO DANS ${{countdown}}S`;
+                                 countdown--;
+                                 
+                                 if (countdown < 0) {{
+                                     clearInterval(countdownTimer);
+                                     closeWindow();
+                                 }}
+                             }}, 1000);
+                         }}, 20000);
+                         
+                         // Annuler l'auto-fermeture si l'utilisateur interagit
+                         document.addEventListener('click', () => {{
+                             if (countdownTimer) {{
+                                 clearInterval(countdownTimer);
+                                 const button = document.querySelector('.close-button');
+                                 button.textContent = 'FERMER LA FENÊTRE';
+                                 button.style.animation = '';
+                             }}
+                         }});
+                     }});
+                 </script>
             </body>
             </html>
             """.encode('utf-8')
