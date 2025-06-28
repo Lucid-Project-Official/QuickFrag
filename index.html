@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickFrag - Gaming Platform Ultra</title>
+    
+    <!-- Model Viewer -->
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation futuriste -->
+    <nav class="nav-futuristic">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-text">QUICKFRAG</span>
+                <div class="logo-underline"></div>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">ACCUEIL</a></li>
+                <li><a href="#features" class="nav-link">FONCTIONNALITÉS</a></li>
+                <li><a href="#servers" class="nav-link">SERVEURS</a></li>
+                <li><a href="#discord" class="nav-link">DISCORD</a></li>
+            </ul>
+            <div class="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-background">
+            <div class="particles"></div>
+            <div class="cyber-grid"></div>
+        </div>
+        
+        <div class="hero-content">
+            <h1 class="hero-title">
+                <span class="title-line">GAMING</span>
+                <span class="title-line highlight">EVOLUTION</span>
+                <span class="title-line">STARTS HERE</span>
+            </h1>
+            <p class="hero-subtitle">Plateforme de jeu ultra-moderne avec système de rang avancé</p>
+            
+            <div class="hero-buttons">
+                <button class="btn btn-primary" onclick="connectSteam()">
+                    <span class="btn-text">CONNECTER STEAM</span>
+                    <div class="btn-glow"></div>
+                </button>
+                <button class="btn btn-secondary">
+                    <span class="btn-text">REJOINDRE DISCORD</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Modèles 3D flottants CS2 -->
+        <model-viewer 
+            id="ak47-model"
+            src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf"
+            alt="AK47 CS2 - Fusil d'assaut iconique"
+            class="floating-model model-1"
+            auto-rotate
+            camera-controls
+            disable-zoom
+            interaction-prompt="none"
+            shadow-intensity="1"
+            environment-image="studio"
+            exposure="1.5">
+        </model-viewer>
+
+        <model-viewer 
+            id="smoke-model"
+            src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/Sphere/glTF/Sphere.gltf"
+            alt="Fumigène CS2 - Grenade tactique"
+            class="floating-model model-2"
+            auto-rotate
+            camera-controls
+            disable-zoom
+            interaction-prompt="none"
+            shadow-intensity="1"
+            environment-image="studio"
+            exposure="1.2">
+        </model-viewer>
+
+        <model-viewer 
+            id="knife-model"
+            src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf"
+            alt="Couteau CS2 - Arme de mêlée"
+            class="floating-model model-3"
+            auto-rotate
+            camera-controls
+            disable-zoom
+            interaction-prompt="none"
+            shadow-intensity="1"
+            environment-image="studio"
+            exposure="1.0">
+        </model-viewer>
+
+        <model-viewer 
+            id="helmet-model"
+            src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/SciFiHelmet/glTF/SciFiHelmet.gltf"
+            alt="Casque Tactique CS2"
+            class="floating-model model-4"
+            auto-rotate
+            camera-controls
+            disable-zoom
+            interaction-prompt="none"
+            shadow-intensity="1"
+            environment-image="studio"
+            exposure="1.3">
+        </model-viewer>
+
+        <model-viewer 
+            id="c4-model"
+            src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/Box/glTF/Box.gltf"
+            alt="Bombe C4 CS2"
+            class="floating-model model-5"
+            auto-rotate
+            camera-controls
+            disable-zoom
+            interaction-prompt="none"
+            shadow-intensity="1"
+            environment-image="studio"
+            exposure="1.1">
+        </model-viewer>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">FONCTIONNALITÉS AVANCÉES</h2>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>SYSTÈME ELO</h3>
+                    <p>Classement compétitif ultra précis avec algorithme avancé</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>WHITELIST DYNAMIQUE</h3>
+                    <p>Sécurité maximale avec système de validation automatisé</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>STATISTIQUES LIVE</h3>
+                    <p>Analyse en temps réel de vos performances</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🎮</div>
+                    <h3>INTÉGRATION CS2</h3>
+                    <p>Compatible avec Counter-Strike 2 dernière génération</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" data-count="50000">0</div>
+                    <div class="stat-label">JOUEURS ACTIFS</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-count="25">0</div>
+                    <div class="stat-label">SERVEURS</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-count="1000000">0</div>
+                    <div class="stat-label">MATCHS JOUÉS</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-count="99">0</div>
+                    <div class="stat-label">% UPTIME</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>QUICKFRAG</h3>
+                    <p>La plateforme gaming de nouvelle génération</p>
+                </div>
+                <div class="footer-section">
+                    <h4>LIENS</h4>
+                    <ul>
+                        <li><a href="#home">Accueil</a></li>
+                        <li><a href="#features">Fonctionnalités</a></li>
+                        <li><a href="#servers">Serveurs</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>COMMUNAUTÉ</h4>
+                    <ul>
+                        <li><a href="#">Discord</a></li>
+                        <li><a href="#">Steam</a></li>
+                        <li><a href="#">Reddit</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 QuickFrag. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+</body>
+</html> 

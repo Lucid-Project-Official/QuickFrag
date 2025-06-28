@@ -1,0 +1,98 @@
+{
+  "cs2_models": {
+    "weapons": {
+      "ak47": {
+        "name": "AK-47",
+        "url": "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf",
+        "fallback": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "scale": "0.8 0.8 0.8",
+        "position": "0 0 0",
+        "description": "Fusil d'assaut iconique de CS2"
+      },
+      "awp": {
+        "name": "AWP",
+        "url": "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
+        "fallback": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "scale": "1.2 1.2 1.2",
+        "position": "0 0 0",
+        "description": "Fusil de précision légendaire"
+      },
+      "knife": {
+        "name": "Couteau",
+        "url": "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf",
+        "fallback": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "scale": "0.5 0.5 0.5",
+        "position": "0 0 0",
+        "description": "Couteau tactique CS2"
+      }
+    },
+    "equipment": {
+      "smoke_grenade": {
+        "name": "Grenade Fumigène",
+        "url": "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/Sphere/glTF/Sphere.gltf",
+        "fallback": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "scale": "0.3 0.3 0.3",
+        "position": "0 0 0",
+        "description": "Grenade fumigène tactique"
+      },
+      "flashbang": {
+        "name": "Grenade Aveuglante",
+        "url": "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/SimpleMorph/glTF/SimpleMorph.gltf",
+        "fallback": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "scale": "0.4 0.4 0.4",
+        "position": "0 0 0",
+        "description": "Grenade aveuglante"
+      },
+      "c4": {
+        "name": "Bombe C4",
+        "url": "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
+        "fallback": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "scale": "0.6 0.6 0.6",
+        "position": "0 0 0",
+        "description": "Explosif C4"
+      }
+    },
+    "characters": {
+      "ct_player": {
+        "name": "Joueur CT",
+        "url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "fallback": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "scale": "1 1 1",
+        "position": "0 0 0",
+        "description": "Soldat Counter-Terrorist"
+      },
+      "t_player": {
+        "name": "Joueur T",
+        "url": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "fallback": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "scale": "1 1 1",
+        "position": "0 0 0",
+        "description": "Terroriste"
+      }
+    },
+    "maps": {
+      "dust2_fragment": {
+        "name": "Fragment de Dust2",
+        "url": "https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models/2.0/SciFiHelmet/glTF/SciFiHelmet.gltf",
+        "fallback": "https://modelviewer.dev/shared-assets/models/Astronaut.glb",
+        "scale": "2 2 2",
+        "position": "0 0 0",
+        "description": "Fragment de la carte légendaire Dust2"
+      }
+    }
+  },
+  "animation_settings": {
+    "auto_rotate": true,
+    "rotation_speed": "slow",
+    "lighting": "studio",
+    "shadow_intensity": "0.5",
+    "exposure": "1.0"
+  },
+  "display_options": {
+    "show_controls": false,
+    "show_zoom": false,
+    "show_fullscreen": false,
+    "interaction_prompt": "none",
+    "camera_orbit": "0deg 90deg 0deg"
+  }
+} 
