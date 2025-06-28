@@ -9,12 +9,12 @@ using System.Net.Http;
 
 namespace HelloWorldPluginCS2;
 
-public class WhitelistPlugin : BasePlugin
+public class QFWhitelistPlugin : BasePlugin
 {
-    public override string ModuleName => "QuickFrag Whitelist";
+    public override string ModuleName => "QFWhitelist";
     public override string ModuleVersion => "1.0.0";
     public override string ModuleAuthor => "Linoxyr";
-    public override string ModuleDescription => "Plugin de whitelist dynamique pour CS2 avec Supabase";
+    public override string ModuleDescription => "Plugin QFWhitelist dynamique pour CS2 avec Supabase";
 
     private HttpClient? httpClient;
     private string? serverAddress;
@@ -32,7 +32,7 @@ public class WhitelistPlugin : BasePlugin
 
     public override void Load(bool hotReload)
     {
-        Console.WriteLine("[PLUGIN] QuickFrag Whitelist v" + ModuleVersion + " - Démarrage");
+        Console.WriteLine("[PLUGIN] QFWhitelist v" + ModuleVersion + " - Démarrage");
         
         httpClient = new HttpClient();
         httpClient.Timeout = TimeSpan.FromSeconds(30);
@@ -46,7 +46,7 @@ public class WhitelistPlugin : BasePlugin
         
         RegisterEventHandler<EventPlayerConnectFull>(OnPlayerConnectFull);
         
-        Console.WriteLine("[PLUGIN] QuickFrag Whitelist prêt");
+        Console.WriteLine("[PLUGIN] QFWhitelist prêt");
     }
 
 
@@ -291,7 +291,7 @@ public class WhitelistPlugin : BasePlugin
 
 
     // Commande pour recharger la whitelist manuellement
-    [ConsoleCommand("css_reload_whitelist", "Recharge la whitelist depuis la base de données")]
+    [ConsoleCommand("css_qf_reload", "Recharge la whitelist depuis la base de données")]
     [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
     public void OnReloadWhitelistCommand(CCSPlayerController? player, CommandInfo commandInfo)
     {
@@ -299,7 +299,7 @@ public class WhitelistPlugin : BasePlugin
         commandInfo.ReplyToCommand("Rechargement en cours...");
     }
 
-    [ConsoleCommand("css_whitelist_status", "Affiche le statut de la whitelist")]
+    [ConsoleCommand("css_qf_status", "Affiche le statut de la whitelist")]
     [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
     public void OnWhitelistStatusCommand(CCSPlayerController? player, CommandInfo commandInfo)
     {
@@ -307,22 +307,22 @@ public class WhitelistPlugin : BasePlugin
         Console.WriteLine($"[STATUS] Joueurs autorisés: {whitelistedSteamIds.Count}");
         Console.WriteLine($"[STATUS] État: {(whitelistEnabled ? "ACTIVÉE" : "DÉSACTIVÉE")}");
         
-        commandInfo.ReplyToCommand($"Whitelist: {whitelistedSteamIds.Count} joueurs autorisés");
+        commandInfo.ReplyToCommand($"QFWhitelist: {whitelistedSteamIds.Count} joueurs autorisés");
     }
 
-    [ConsoleCommand("css_whitelist_toggle", "Active/désactive la whitelist")]
+    [ConsoleCommand("css_qf_toggle", "Active/désactive la whitelist")]
     [CommandHelper(minArgs: 0, usage: "", whoCanExecute: CommandUsage.SERVER_ONLY)]
     public void OnWhitelistToggleCommand(CCSPlayerController? player, CommandInfo commandInfo)
     {
         whitelistEnabled = !whitelistEnabled;
         string status = whitelistEnabled ? "ACTIVÉE" : "DÉSACTIVÉE";
-        Console.WriteLine($"[CONFIG] Whitelist {status}");
-        commandInfo.ReplyToCommand($"Whitelist {status}");
+        Console.WriteLine($"[CONFIG] QFWhitelist {status}");
+        commandInfo.ReplyToCommand($"QFWhitelist {status}");
     }
 
     public override void Unload(bool hotReload)
     {
         httpClient?.Dispose();
-        Console.WriteLine("[PLUGIN] QuickFrag Whitelist déchargé");
+        Console.WriteLine("[PLUGIN] QFWhitelist déchargé");
     }
 }
