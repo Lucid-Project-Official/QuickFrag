@@ -546,7 +546,7 @@ class handler(BaseHTTPRequestHandler):
                                  <!-- Modèles 3D flottants -->
                  <div class="floating-model model-ak47">
                      <model-viewer
-                         src="http://localhost:8080/api/Models/m4a4-asiimov.glb"
+                         src="/Models/m4a4-asiimov.glb"
                          alt="M4A4 Asiimov"
                          auto-rotate
                          rotation-per-second="30deg"
@@ -559,7 +559,7 @@ class handler(BaseHTTPRequestHandler):
                  
                  <div class="floating-model model-smoke">
                      <model-viewer
-                         src="http://localhost:8080/api/Models/p90-asiimov.glb"
+                         src="/Models/p90-asiimov.glb"
                          alt="P90 Asiimov"
                          auto-rotate
                          rotation-per-second="45deg"
@@ -572,7 +572,7 @@ class handler(BaseHTTPRequestHandler):
                  
                  <div class="floating-model model-bomb">
                      <model-viewer
-                         src="http://localhost:8080/api/Models/ak47-redline.glb"
+                         src="/Models/ak47-redline.glb"
                          alt="AK-47 Redline"
                          auto-rotate
                          rotation-per-second="60deg"
@@ -585,7 +585,7 @@ class handler(BaseHTTPRequestHandler):
                  
                  <div class="floating-model model-knife">
                      <model-viewer
-                         src="http://localhost:8080/api/Models/karambit-fade.glb"
+                         src="/Models/karambit-fade.glb"
                          alt="Karambit Fade"
                          auto-rotate
                          rotation-per-second="90deg"
@@ -637,13 +637,25 @@ class handler(BaseHTTPRequestHandler):
                      
                      // Fonction de fermeture améliorée
                      function closeWindow() {{
-                         // Essayer plusieurs méthodes de fermeture
-                         if (window.opener) {{
+                         try {{
+                             // Méthode 1: Fermeture directe
                              window.close();
-                         }} else {{
-                             // Fallback : rediriger vers une page vide ou afficher un message
-                             if (confirm('Fermer cet onglet ?')) {{
-                                 window.open('', '_self').close();
+                         }} catch(e) {{
+                             try {{
+                                 // Méthode 2: Fermeture avec opener
+                                 if (window.opener) {{
+                                     window.opener = null;
+                                     window.close();
+                                 }}
+                             }} catch(e2) {{
+                                 try {{
+                                     // Méthode 3: Redirection vers about:blank puis fermeture
+                                     window.location.href = 'about:blank';
+                                     window.close();
+                                 }} catch(e3) {{
+                                     // Méthode 4: Fallback avec confirmation
+                                     alert('Veuillez fermer manuellement cet onglet (Ctrl+W ou ⌘+W)');
+                                 }}
                              }}
                          }}
                      }}
