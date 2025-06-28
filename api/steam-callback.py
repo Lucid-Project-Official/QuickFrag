@@ -107,7 +107,6 @@ def send_discord_message(discord_id, steam_id):
         if not discord_token:
             print("Token Discord manquant")
             return
-        
         # Créer le DM avec l'utilisateur
         create_dm_url = "https://discord.com/api/v10/users/@me/channels"
         dm_data = {
@@ -203,8 +202,7 @@ class handler(BaseHTTPRequestHandler):
             <head>
                 <title>QuickFrag - Compte Lié</title>
                 <meta charset="utf-8">
-                                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                 <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
                     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
                     
@@ -214,16 +212,16 @@ class handler(BaseHTTPRequestHandler):
                         box-sizing: border-box;
                     }}
                     
-                                         body {{
-                         font-family: 'Orbitron', monospace;
-                         background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e  50%, #0f3460 75%, #003366 100%);
-                         min-height: 100vh;
-                         overflow-x: hidden;
-                         position: relative;
-                         color: #ffffff;
-                         opacity: 0;
-                         animation: pageEntrance 2s ease-out forwards;
-                     }}
+                    body {{
+                        font-family: 'Orbitron', monospace;
+                        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #003366 100%);
+                        min-height: 100vh;
+                        overflow-x: hidden;
+                        position: relative;
+                        color: #ffffff;
+                        opacity: 0;
+                        animation: pageEntrance 2s ease-out forwards;
+                    }}
                     
                     .stars {{
                         position: fixed;
@@ -244,90 +242,68 @@ class handler(BaseHTTPRequestHandler):
                         animation: twinkle 3s infinite alternate;
                     }}
                     
-                                         @keyframes twinkle {{
-                         0% {{ opacity: 0.3; }}
-                         100% {{ opacity: 1; }}
-                     }}
-                     
-                     @keyframes pageEntrance {{
-                         0% {{ 
-                             opacity: 0;
-                             transform: scale(0.8);
-                             filter: blur(20px);
-                         }}
-                         50% {{
-                             opacity: 0.7;
-                             transform: scale(1.05);
-                             filter: blur(5px);
-                         }}
-                         100% {{ 
-                             opacity: 1;
-                             transform: scale(1);
-                             filter: blur(0);
-                         }}
-                     }}
-                     
-                     @keyframes slideInFromTop {{
-                         0% {{
-                             opacity: 0;
-                             transform: translateY(-100px) rotateX(-90deg);
-                         }}
-                         100% {{
-                             opacity: 1;
-                             transform: translateY(0) rotateX(0);
-                         }}
-                     }}
-                     
-                     @keyframes slideInFromBottom {{
-                         0% {{
-                             opacity: 0;
-                             transform: translateY(100px) scale(0.5);
-                         }}
-                         100% {{
-                             opacity: 1;
-                             transform: translateY(0) scale(1);
-                         }}
-                     }}
-                     
-                     @keyframes slideInFromLeft {{
-                         0% {{
-                             opacity: 0;
-                             transform: translateX(-200px) rotateY(-45deg);
-                         }}
-                         100% {{
-                             opacity: 1;
-                             transform: translateX(0) rotateY(0);
-                         }}
-                     }}
-                     
-                     @keyframes slideInFromRight {{
-                         0% {{
-                             opacity: 0;
-                             transform: translateX(200px) rotateY(45deg);
-                         }}
-                         100% {{
-                             opacity: 1;
-                             transform: translateX(0) rotateY(0);
-                         }}
-                     }}
-                     
-                     @keyframes matrixEntrance {{
-                         0% {{
-                             opacity: 0;
-                             transform: scale(0) rotate(180deg);
-                             filter: hue-rotate(180deg) brightness(3);
-                         }}
-                         50% {{
-                             opacity: 0.8;
-                             transform: scale(1.2) rotate(0deg);
-                             filter: hue-rotate(90deg) brightness(2);
-                         }}
-                         100% {{
-                             opacity: 1;
-                             transform: scale(1) rotate(0deg);
-                             filter: hue-rotate(0deg) brightness(1);
-                         }}
-                     }}
+                    @keyframes twinkle {{
+                        0% {{ opacity: 0.3; }}
+                        100% {{ opacity: 1; }}
+                    }}
+                    
+                    @keyframes pageEntrance {{
+                        0% {{ 
+                            opacity: 0;
+                            transform: scale(0.8);
+                            filter: blur(20px);
+                        }}
+                        50% {{
+                            opacity: 0.7;
+                            transform: scale(1.05);
+                            filter: blur(5px);
+                        }}
+                        100% {{ 
+                            opacity: 1;
+                            transform: scale(1);
+                            filter: blur(0);
+                        }}
+                    }}
+                    
+                    @keyframes slideInFromTop {{
+                        0% {{
+                            opacity: 0;
+                            transform: translateY(-100px) rotateX(-90deg);
+                        }}
+                        100% {{
+                            opacity: 1;
+                            transform: translateY(0) rotateX(0);
+                        }}
+                    }}
+                    
+                    @keyframes slideInFromBottom {{
+                        0% {{
+                            opacity: 0;
+                            transform: translateY(100px) scale(0.5);
+                        }}
+                        100% {{
+                            opacity: 1;
+                            transform: translateY(0) scale(1);
+                        }}
+                    }}
+                    
+                    @keyframes matrixEntrance {{
+                        0% {{
+                            opacity: 0;
+                            transform: scale(0) rotate(180deg);
+                            filter: hue-rotate(180deg) brightness(3);
+                        }}
+                        50% {{
+                            opacity: 0.8;
+                            transform: scale(1.2) rotate(0deg);
+                            filter: hue-rotate(90deg) brightness(2);
+                        }}
+                        100% {{
+                            opacity: 1;
+                            transform: scale(1) rotate(0deg);
+                            filter: hue-rotate(0deg) brightness(1);
+                        }}
+                    }}
                     
                     .main-container {{
                         position: relative;
@@ -340,75 +316,79 @@ class handler(BaseHTTPRequestHandler):
                         padding: 20px;
                     }}
                     
-                                         .success-card {{
-                         background: rgba(255, 255, 255, 0.05);
-                         backdrop-filter: blur(20px);
-                         border: 1px solid rgba(0, 255, 255, 0.3);
-                         border-radius: 20px;
-                         padding: 40px;
-                         max-width: 600px;
-                         width: 100%;
-                         box-shadow: 
-                             0 8px 32px rgba(0, 255, 255, 0.1),
-                             inset 0 1px 0 rgba(255, 255, 255, 0.1);
-                         position: relative;
-                         opacity: 0;
-                         animation: slideInFromBottom 1.5s ease-out 0.5s forwards,
-                                   cardGlow 2s ease-in-out 2s infinite alternate;
-                     }}
+                    .success-card {{
+                        background: rgba(255, 255, 255, 0.05);
+                        backdrop-filter: blur(20px);
+                        border: 1px solid rgba(0, 255, 255, 0.3);
+                        border-radius: 20px;
+                        padding: 40px;
+                        max-width: 600px;
+                        width: 100%;
+                        box-shadow: 
+                            0 8px 32px rgba(0, 255, 255, 0.1),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                        position: relative;
+                        opacity: 0;
+                        animation: slideInFromBottom 1.5s ease-out 0.5s forwards,
+                                  cardGlow 2s ease-in-out 2s infinite alternate;
+                    }}
                     
                     @keyframes cardGlow {{
                         0% {{ box-shadow: 0 8px 32px rgba(0, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1); }}
                         100% {{ box-shadow: 0 8px 32px rgba(0, 255, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2); }}
                     }}
                     
-                                         .success-title {{
-                         font-size: 2.5rem;
-                         font-weight: 900;
-                         color: #00ffff;
-                         margin-bottom: 20px;
-                         text-align: center;
-                         text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-                         opacity: 0;
-                         animation: slideInFromTop 1.2s ease-out 1s forwards,
-                                   titlePulse 2s ease-in-out 2.5s infinite alternate;
-                     }}
+                    .success-title {{
+                        font-size: 2.5rem;
+                        font-weight: 900;
+                        color: #00ffff;
+                        margin-bottom: 20px;
+                        text-align: center;
+                        text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+                        opacity: 0;
+                        animation: slideInFromTop 1.2s ease-out 1s forwards,
+                                  titlePulse 2s ease-in-out 2.5s infinite alternate;
+                        line-height: 1.2;
+                    }}
                     
                     @keyframes titlePulse {{
                         0% {{ text-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }}
                         100% {{ text-shadow: 0 0 30px rgba(0, 255, 255, 0.8); }}
                     }}
                     
-                                         .success-subtitle {{
-                         font-size: 1.2rem;
-                         color: #ffffff;
-                         margin-bottom: 30px;
-                         text-align: center;
-                         opacity: 0;
-                         animation: slideInFromTop 1.2s ease-out 1.3s forwards;
-                     }}
-                     
-                     .steam-info {{
-                         background: rgba(0, 255, 255, 0.1);
-                         border: 1px solid rgba(0, 255, 255, 0.3);
-                         border-radius: 10px;
-                         padding: 20px;
-                         margin: 20px 0;
-                         text-align: center;
-                         opacity: 0;
-                         animation: matrixEntrance 1.5s ease-out 1.8s forwards;
-                     }}
-                     
-                     .success-card p {{
-                         opacity: 0;
-                         animation: slideInFromBottom 1s ease-out 2.2s forwards;
-                     }}
+                    .success-subtitle {{
+                        font-size: 1.2rem;
+                        color: #ffffff;
+                        margin-bottom: 30px;
+                        text-align: center;
+                        opacity: 0;
+                        animation: slideInFromTop 1.2s ease-out 1.3s forwards;
+                        line-height: 1.4;
+                    }}
+                    
+                    .steam-info {{
+                        background: rgba(0, 255, 255, 0.1);
+                        border: 1px solid rgba(0, 255, 255, 0.3);
+                        border-radius: 10px;
+                        padding: 20px;
+                        margin: 20px 0;
+                        text-align: center;
+                        opacity: 0;
+                        animation: matrixEntrance 1.5s ease-out 1.8s forwards;
+                    }}
+                    
+                    .success-card p {{
+                        opacity: 0;
+                        animation: slideInFromBottom 1s ease-out 2.2s forwards;
+                        line-height: 1.6;
+                    }}
                     
                     .steam-id {{
                         font-size: 1.5rem;
                         font-weight: 700;
                         color: #00ffff;
                         margin-bottom: 10px;
+                        word-break: break-all;
                     }}
                     
                     .discord-info {{
@@ -416,126 +396,161 @@ class handler(BaseHTTPRequestHandler):
                         font-size: 1.1rem;
                     }}
                     
-                    .floating-model {{
-                        position: fixed;
-                        pointer-events: none;
-                        z-index: 5;
+                    .close-button {{
+                        margin-top: 30px;
+                        padding: 15px 30px;
+                        background: linear-gradient(45deg, #00ffff, #0099cc);
+                        border: none;
+                        border-radius: 50px;
+                        color: #000;
+                        font-family: 'Orbitron', monospace;
+                        font-weight: 700;
+                        font-size: 1.1rem;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
+                        opacity: 0;
+                        animation: slideInFromBottom 1.2s ease-out 2.5s forwards;
+                        width: 100%;
+                        max-width: 300px;
                     }}
                     
-                                         .model-ak47 {{
-                         top: 20%;
-                         right: 10%;
-                         width: 200px;
-                         height: 200px;
-                         opacity: 0;
-                         animation: slideInFromRight 2s ease-out 2s forwards,
-                                   floatAK 15s linear 4s infinite;
-                     }}
-                     
-                     .model-smoke {{
-                         top: 60%;
-                         left: 5%;
-                         width: 150px;
-                         height: 150px;
-                         opacity: 0;
-                         animation: slideInFromLeft 2s ease-out 2.5s forwards,
-                                   floatSmoke 20s linear 4.5s infinite;
-                     }}
-                     
-                     .model-bomb {{
-                         top: 30%;
-                         left: 15%;
-                         width: 120px;
-                         height: 120px;
-                         opacity: 0;
-                         animation: matrixEntrance 2.5s ease-out 3s forwards,
-                                   floatBomb 18s linear 5.5s infinite;
-                     }}
-                     
-                     .model-knife {{
-                         top: 70%;
-                         right: 20%;
-                         width: 100px;
-                         height: 100px;
-                         opacity: 0;
-                         animation: slideInFromBottom 2s ease-out 3.5s forwards,
-                                   floatKnife 12s linear 5.5s infinite;
-                     }}
-                    
-                    @keyframes floatAK {{
-                        0% {{ transform: translateY(0px) rotate(0deg); }}
-                        25% {{ transform: translateY(-20px) rotate(90deg); }}
-                        50% {{ transform: translateY(0px) rotate(180deg); }}
-                        75% {{ transform: translateY(-15px) rotate(270deg); }}
-                        100% {{ transform: translateY(0px) rotate(360deg); }}
+                    .close-button:hover {{
+                        transform: translateY(-2px) scale(1.05);
+                        box-shadow: 0 8px 25px rgba(0, 255, 255, 0.7);
+                        background: linear-gradient(45deg, #00ffff, #ff6b6b);
                     }}
                     
-                    @keyframes floatSmoke {{
-                        0% {{ transform: translateX(0px) translateY(0px) rotate(0deg); }}
-                        25% {{ transform: translateX(30px) translateY(-25px) rotate(90deg); }}
-                        50% {{ transform: translateX(0px) translateY(-10px) rotate(180deg); }}
-                        75% {{ transform: translateX(-25px) translateY(-20px) rotate(270deg); }}
-                        100% {{ transform: translateX(0px) translateY(0px) rotate(360deg); }}
+                    .close-button:active {{
+                        transform: translateY(0) scale(0.98);
                     }}
                     
-                    @keyframes floatBomb {{
-                        0% {{ transform: scale(1) rotate(0deg); }}
-                        25% {{ transform: scale(1.1) rotate(90deg); }}
-                        50% {{ transform: scale(0.9) rotate(180deg); }}
-                        75% {{ transform: scale(1.05) rotate(270deg); }}
-                        100% {{ transform: scale(1) rotate(360deg); }}
+                    /* Responsive Design */
+                    @media screen and (max-width: 1200px) {{
+                        .main-container {{
+                            padding: 15px;
+                        }}
+                        .success-card {{
+                            max-width: 500px;
+                        }}
                     }}
                     
-                    @keyframes floatKnife {{
-                        0% {{ transform: translateY(0px) rotate(0deg) scale(1); }}
-                        33% {{ transform: translateY(-30px) rotate(120deg) scale(1.2); }}
-                        66% {{ transform: translateY(10px) rotate(240deg) scale(0.8); }}
-                        100% {{ transform: translateY(0px) rotate(360deg) scale(1); }}
-                    }}
-                    
-                                         model-viewer {{
-                         width: 100%;
-                         height: 100%;
-                         border-radius: 15px;
-                         box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
-                         --poster-color: transparent;
-                         --progress-bar-color: #00ffff;
-                         --progress-mask: rgba(0, 255, 255, 0.3);
-                         filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.2));
-                     }}
-                    
-                                         .close-button {{
-                         margin-top: 30px;
-                         padding: 15px 30px;
-                         background: linear-gradient(45deg, #00ffff, #0099cc);
-                         border: none;
-                         border-radius: 50px;
-                         color: #000;
-                         font-family: 'Orbitron', monospace;
-                         font-weight: 700;
-                         font-size: 1.1rem;
-                         cursor: pointer;
-                         transition: all 0.3s ease;
-                         box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3);
-                         opacity: 0;
-                         animation: slideInFromBottom 1.2s ease-out 2.5s forwards;
-                     }}
-                     
-                     .close-button:hover {{
-                         transform: translateY(-2px) scale(1.05);
-                         box-shadow: 0 8px 25px rgba(0, 255, 255, 0.7);
-                         background: linear-gradient(45deg, #00ffff, #ff6b6b);
-                     }}
-                    
-                    @media (max-width: 768px) {{
-                        .floating-model {{
-                            display: none;
+                    @media screen and (max-width: 768px) {{
+                        .main-container {{
+                            padding: 10px;
+                        }}
+                        .success-card {{
+                            padding: 30px 25px;
+                            margin: 10px;
+                            border-radius: 15px;
                         }}
                         .success-title {{
                             font-size: 2rem;
+                            margin-bottom: 15px;
+                        }}
+                        .success-subtitle {{
+                            font-size: 1rem;
+                            margin-bottom: 25px;
+                        }}
+                        .steam-info {{
+                            padding: 15px;
+                            margin: 15px 0;
+                        }}
+                        .steam-id {{
+                            font-size: 1.2rem;
+                        }}
+                        .discord-info {{
+                            font-size: 1rem;
+                        }}
+                        .close-button {{
+                            padding: 12px 25px;
+                            font-size: 1rem;
+                            margin-top: 25px;
+                        }}
+                    }}
+                    
+                    @media screen and (max-width: 480px) {{
+                        .main-container {{
+                            padding: 5px;
+                        }}
+                        .success-card {{
+                            padding: 25px 20px;
+                            margin: 5px;
+                            border-radius: 12px;
+                        }}
+                        .success-title {{
+                            font-size: 1.6rem;
+                            margin-bottom: 12px;
+                        }}
+                        .success-subtitle {{
+                            font-size: 0.9rem;
+                            margin-bottom: 20px;
+                        }}
+                        .steam-info {{
+                            padding: 12px;
+                            margin: 12px 0;
+                        }}
+                        .steam-id {{
+                            font-size: 1rem;
+                            margin-bottom: 8px;
+                        }}
+                        .discord-info {{
+                            font-size: 0.9rem;
+                        }}
+                        .close-button {{
+                            padding: 10px 20px;
+                            font-size: 0.9rem;
+                            margin-top: 20px;
+                        }}
+                        .success-card p {{
+                            font-size: 0.9rem;
+                        }}
+                    }}
+                    
+                    @media screen and (max-width: 360px) {{
+                        .success-title {{
+                            font-size: 1.4rem;
+                        }}
+                        .success-subtitle {{
+                            font-size: 0.8rem;
+                        }}
+                        .steam-id {{
+                            font-size: 0.9rem;
+                        }}
+                        .discord-info {{
+                            font-size: 0.8rem;
+                        }}
+                        .success-card p {{
+                            font-size: 0.8rem;
+                        }}
+                    }}
+                    
+                    /* Landscape orientation sur mobile */
+                    @media screen and (max-height: 500px) and (orientation: landscape) {{
+                        .main-container {{
+                            padding: 10px;
+                            justify-content: flex-start;
+                            padding-top: 20px;
                         }}
                         .success-card {{
                             padding: 20px;
+                            margin: 0;
+                        }}
+                        .success-title {{
+                            font-size: 1.5rem;
+                            margin-bottom: 10px;
+                        }}
+                        .success-subtitle {{
+                            font-size: 0.9rem;
+                            margin-bottom: 15px;
+                        }}
+                        .steam-info {{
+                            padding: 10px;
+                            margin: 10px 0;
+                        }}
+                        .close-button {{
+                            margin-top: 15px;
+                            padding: 8px 20px;
                         }}
                     }}
                 </style>
@@ -543,271 +558,168 @@ class handler(BaseHTTPRequestHandler):
             <body>
                 <div class="stars"></div>
                 
-                                 <!-- Modèles 3D flottants -->
-                 <div class="floating-model model-ak47">
-                     <model-viewer
-                         src="/Models/m4a4-asiimov.glb"
-                         alt="M4A4 Asiimov"
-                         auto-rotate
-                         rotation-per-second="30deg"
-                         camera-controls
-                         disable-zoom
-                         disable-pan
-                         loading="eager">
-                     </model-viewer>
-                 </div>
-                 
-                 <div class="floating-model model-smoke">
-                     <model-viewer
-                         src="/Models/p90-asiimov.glb"
-                         alt="P90 Asiimov"
-                         auto-rotate
-                         rotation-per-second="45deg"
-                         camera-controls
-                         disable-zoom
-                         disable-pan
-                         loading="eager">
-                     </model-viewer>
-                 </div>
-                 
-                 <div class="floating-model model-bomb">
-                     <model-viewer
-                         src="/Models/ak47-redline.glb"
-                         alt="AK-47 Redline"
-                         auto-rotate
-                         rotation-per-second="60deg"
-                         camera-controls
-                         disable-zoom
-                         disable-pan
-                         loading="eager">
-                     </model-viewer>
-                 </div>
-                 
-                 <div class="floating-model model-knife">
-                     <model-viewer
-                         src="/Models/karambit-fade.glb"
-                         alt="Karambit Fade"
-                         auto-rotate
-                         rotation-per-second="90deg"
-                         camera-controls
-                         disable-zoom
-                         disable-pan
-                         loading="eager">
-                     </model-viewer>
-                 </div>
-                
                 <div class="main-container">
                     <div class="success-card">
                         <h1 class="success-title">⚡ CONNEXION ÉTABLIE ⚡</h1>
                         <p class="success-subtitle">Synchronisation Steam ↔ Discord complétée</p>
                         
-                                                 <div class="steam-info">
-                             <div class="steam-id">Steam ID: {steam_id}</div>
-                             <div class="discord-info">🎮 Prêt pour QuickFrag</div>
-                         </div>
-                         
-                         <p style="margin: 20px 0; opacity: 0.8;">
-                             ✅ Profil Discord mis à jour<br>
-                             ✅ Accès aux serveurs activé<br>
-                             ✅ Système de rang initialisé<br>
-                             ✅ ELO de départ: 1000 points
-                         </p>
+                        <div class="steam-info">
+                            <div class="steam-id">Steam ID: {steam_id}</div>
+                            <div class="discord-info">🎮 Prêt pour QuickFrag</div>
+                        </div>
                         
-                                                 <button class="close-button" onclick="closeWindow()">
-                             FERMER LA FENÊTRE
-                         </button>
+                        <p style="margin: 20px 0; opacity: 0.8;">
+                            ✅ Profil Discord mis à jour<br>
+                            ✅ Accès aux serveurs activé<br>
+                            ✅ Système de rang initialisé<br>
+                            ✅ ELO de départ: 1000 points
+                        </p>
+                        
+                        <button class="close-button" onclick="closeWindow()">
+                            FERMER LA FENÊTRE
+                        </button>
                     </div>
                 </div>
                 
-                                 <script>
-                     // Génération des étoiles
-                     function createStars() {{
-                         const starsContainer = document.querySelector('.stars');
-                         const starCount = 100;
-                         
-                         for (let i = 0; i < starCount; i++) {{
-                             const star = document.createElement('div');
-                             star.className = 'star';
-                             star.style.left = Math.random() * 100 + '%';
-                             star.style.top = Math.random() * 100 + '%';
-                             star.style.animationDelay = Math.random() * 3 + 's';
-                             starsContainer.appendChild(star);
-                         }}
-                     }}
-                     
-                     // Fonction de fermeture améliorée
-                     function closeWindow() {{
-                         try {{
-                             // Méthode 1: Fermeture directe
-                             window.close();
-                         }} catch(e) {{
-                             try {{
-                                 // Méthode 2: Fermeture avec opener
-                                 if (window.opener) {{
-                                     window.opener = null;
-                                     window.close();
-                                 }}
-                             }} catch(e2) {{
-                                 try {{
-                                     // Méthode 3: Redirection vers about:blank puis fermeture
-                                     window.location.href = 'about:blank';
-                                     window.close();
-                                 }} catch(e3) {{
-                                     // Méthode 4: Fallback avec confirmation
-                                     alert('Veuillez fermer manuellement cet onglet (Ctrl+W ou ⌘+W)');
-                                 }}
-                             }}
-                         }}
-                     }}
-                     
-                     // Gestion des animations d'entrée et modèles 3D
-                     document.addEventListener('DOMContentLoaded', function() {{
-                         // Créer les étoiles avec délai
-                         setTimeout(createStars, 500);
-                         
-                         // Audio feedback (optionnel)
-                         const playEntranceSound = () => {{
-                             try {{
-                                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                                 const oscillator = audioContext.createOscillator();
-                                 const gainNode = audioContext.createGain();
-                                 
-                                 oscillator.connect(gainNode);
-                                 gainNode.connect(audioContext.destination);
-                                 
-                                 oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
-                                 oscillator.frequency.exponentialRampToValueAtTime(440, audioContext.currentTime + 0.5);
-                                 
-                                 gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                                 
-                                 oscillator.start(audioContext.currentTime);
-                                 oscillator.stop(audioContext.currentTime + 0.5);
-                             }} catch(e) {{
-                                 console.log('Audio non supporté');
-                             }}
-                         }};
-                         
-                         // Déclencher le son d'entrée après 1 seconde
-                         setTimeout(playEntranceSound, 1000);
-                         
-                         // Gestion des modèles 3D avec effects d'entrée
-                         const models = document.querySelectorAll('model-viewer');
-                         models.forEach((model, index) => {{
-                             // Gestion du chargement
-                             model.addEventListener('load', function() {{
-                                 console.log('Modèle 3D chargé:', this.alt);
-                                 // Ajouter un effet de lueur supplémentaire quand le modèle est chargé
-                                 this.style.filter = 'drop-shadow(0 0 25px rgba(0, 255, 255, 0.5))';
-                                 
-                                 // Effet de particules au chargement
-                                 this.style.animation += ', matrixEntrance 0.5s ease-out';
-                             }});
-                             
-                             // Gestion d'erreur avec diagnostic détaillé
-                             model.addEventListener('error', function() {{
-                                 console.error('❌ Modèle 3D non chargé:', this.alt);
-                                 console.error('   - Chemin:', this.src);
-                                 console.error('   - Vérifiez que le fichier existe dans le dossier api/Models/');
-                                 
-                                 // Remplacer par un modèle de fallback
-                                 this.src = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
-                                 this.style.filter = 'grayscale(100%) opacity(0.5)';
-                                 
-                                 // Afficher un message d'erreur visible
-                                 const errorMsg = document.createElement('div');
-                                 errorMsg.style.cssText = `
-                                     position: absolute;
-                                     top: 50%;
-                                     left: 50%;
-                                     transform: translate(-50%, -50%);
-                                     background: rgba(255, 0, 0, 0.8);
-                                     color: white;
-                                     padding: 5px 10px;
-                                     border-radius: 5px;
-                                     font-size: 12px;
-                                     z-index: 1000;
-                                 `;
-                                 errorMsg.textContent = `❌ ${{this.alt}} manquant`;
-                                 this.parentElement.style.position = 'relative';
-                                 this.parentElement.appendChild(errorMsg);
-                             }});
-                             
-                             // Animation de lueur progressive au survol
-                             model.addEventListener('mouseenter', function() {{
-                                 this.style.transform = 'scale(1.1)';
-                                 this.style.filter = 'drop-shadow(0 0 40px rgba(0, 255, 255, 0.8))';
-                                 this.style.transition = 'all 0.3s ease';
-                             }});
-                             
-                             model.addEventListener('mouseleave', function() {{
-                                 this.style.transform = 'scale(1)';
-                                 this.style.filter = 'drop-shadow(0 0 25px rgba(0, 255, 255, 0.2))';
-                             }});
-                         }});
-                         
-                         // Effet de scan de ligne futuriste
-                         const createScanLine = () => {{
-                             const scanLine = document.createElement('div');
-                             scanLine.style.cssText = `
-                                 position: fixed;
-                                 top: 0;
-                                 left: 0;
-                                 width: 100%;
-                                 height: 2px;
-                                 background: linear-gradient(90deg, transparent, #00ffff, transparent);
-                                 z-index: 9999;
-                                 animation: scanDown 3s ease-out;
-                             `;
-                             document.body.appendChild(scanLine);
-                             setTimeout(() => scanLine.remove(), 3000);
-                         }};
-                         
-                         // Ajouter le style de scan
-                         const style = document.createElement('style');
-                         style.textContent = `
-                             @keyframes scanDown {{
-                                 0% {{ top: -2px; opacity: 0; }}
-                                 10% {{ opacity: 1; }}
-                                 90% {{ opacity: 1; }}
-                                 100% {{ top: 100vh; opacity: 0; }}
-                             }}
-                         `;
-                         document.head.appendChild(style);
-                         
-                         // Déclencher le scan après 2 secondes
-                         setTimeout(createScanLine, 2000);
-                         
-                         // Auto-fermeture après 30 secondes
-                         let countdownTimer;
-                         setTimeout(() => {{
-                             const button = document.querySelector('.close-button');
-                             let countdown = 10;
-                             
-                             button.style.animation = 'cardGlow 0.5s ease-in-out infinite alternate';
-                             
-                             countdownTimer = setInterval(() => {{
-                                 button.textContent = `FERMETURE AUTO DANS ${{countdown}}S`;
-                                 countdown--;
-                                 
-                                 if (countdown < 0) {{
-                                     clearInterval(countdownTimer);
-                                     closeWindow();
-                                 }}
-                             }}, 1000);
-                         }}, 20000);
-                         
-                         // Annuler l'auto-fermeture si l'utilisateur interagit
-                         document.addEventListener('click', () => {{
-                             if (countdownTimer) {{
-                                 clearInterval(countdownTimer);
-                                 const button = document.querySelector('.close-button');
-                                 button.textContent = 'FERMER LA FENÊTRE';
-                                 button.style.animation = '';
-                             }}
-                         }});
-                     }});
-                 </script>
+                <script>
+                    // Génération des étoiles
+                    function createStars() {{
+                        const starsContainer = document.querySelector('.stars');
+                        const starCount = 100;
+                        
+                        for (let i = 0; i < starCount; i++) {{
+                            const star = document.createElement('div');
+                            star.className = 'star';
+                            star.style.left = Math.random() * 100 + '%';
+                            star.style.top = Math.random() * 100 + '%';
+                            star.style.animationDelay = Math.random() * 3 + 's';
+                            starsContainer.appendChild(star);
+                        }}
+                    }}
+                    
+                    // Fonction de fermeture améliorée
+                    function closeWindow() {{
+                        // Essayer de fermer l'onglet en utilisant window.close()
+                        if (window.history.length > 1) {{
+                            // Si l'onglet a un historique, revenir en arrière
+                            window.history.back();
+                        }} else {{
+                            // Essayer plusieurs méthodes pour fermer la fenêtre/onglet
+                            try {{
+                                // Méthode 1: Fermeture directe
+                                window.close();
+                            }} catch(e) {{
+                                console.log('window.close() failed:', e);
+                            }}
+                            
+                            // Méthode 2: Redirection vers une page vide puis fermeture
+                            setTimeout(() => {{
+                                try {{
+                                    window.location.href = 'about:blank';
+                                    window.close();
+                                }} catch(e) {{
+                                    console.log('about:blank method failed:', e);
+                                }}
+                            }}, 100);
+                            
+                            // Méthode 3: Demander à l'utilisateur de fermer manuellement
+                            setTimeout(() => {{
+                                const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                                const message = isMobile ? 
+                                    'Vous pouvez fermer cet onglet maintenant.' :
+                                    'Vous pouvez fermer cet onglet (Ctrl+W ou ⌘+W)';
+                                alert(message);
+                            }}, 500);
+                        }}
+                    }}
+                    
+                    // Gestion des animations d'entrée
+                    document.addEventListener('DOMContentLoaded', function() {{
+                        // Créer les étoiles avec délai
+                        setTimeout(createStars, 500);
+                        
+                        // Audio feedback (optionnel) pour l'entrée
+                        const playEntranceSound = () => {{
+                            try {{
+                                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                                const oscillator = audioContext.createOscillator();
+                                const gainNode = audioContext.createGain();
+                                
+                                oscillator.connect(gainNode);
+                                gainNode.connect(audioContext.destination);
+                                
+                                oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+                                oscillator.frequency.exponentialRampToValueAtTime(440, audioContext.currentTime + 0.5);
+                                
+                                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                                
+                                oscillator.start(audioContext.currentTime);
+                                oscillator.stop(audioContext.currentTime + 0.5);
+                            }} catch(e) {{
+                                console.log('Audio non supporté');
+                            }}
+                        }};
+                        
+                        // Déclencher le son d'entrée après 1 seconde (interaction utilisateur requise)
+                        document.addEventListener('click', playEntranceSound, {{ once: true }});
+                        
+                        // Effet de scan de ligne futuriste
+                        const createScanLine = () => {{
+                            const scanLine = document.createElement('div');
+                            scanLine.style.cssText = `
+                                position: fixed;
+                                top: 0;
+                                left: 0;
+                                width: 100%;
+                                height: 2px;
+                                background: linear-gradient(90deg, transparent, #00ffff, transparent);
+                                z-index: 9999;
+                                animation: scanDown 3s ease-out;
+                            `;
+                            document.body.appendChild(scanLine);
+                            setTimeout(() => scanLine.remove(), 3000);
+                        }};
+                        
+                        // Ajouter le style de scan
+                        const style = document.createElement('style');
+                        style.textContent = `
+                            @keyframes scanDown {{
+                                0% {{ top: -2px; opacity: 0; }}
+                                10% {{ opacity: 1; }}
+                                90% {{ opacity: 1; }}
+                                100% {{ top: 100vh; opacity: 0; }}
+                            }}
+                        `;
+                        document.head.appendChild(style);
+                        
+                        // Déclencher le scan après 2 secondes
+                        setTimeout(createScanLine, 2000);
+                        
+                        // Gestion du raccourci clavier pour fermer (Escape)
+                        document.addEventListener('keydown', function(event) {{
+                            if (event.key === 'Escape') {{
+                                closeWindow();
+                            }}
+                        }});
+                        
+                        // Feedback visuel pour le bouton
+                        const button = document.querySelector('.close-button');
+                        if (button) {{
+                            button.addEventListener('mousedown', function() {{
+                                this.style.transform = 'translateY(2px) scale(0.95)';
+                            }});
+                            
+                            button.addEventListener('mouseup', function() {{
+                                this.style.transform = 'translateY(-2px) scale(1.05)';
+                            }});
+                            
+                            button.addEventListener('mouseleave', function() {{
+                                this.style.transform = 'translateY(0) scale(1)';
+                            }});
+                        }}
+                    }});
+                </script>
             </body>
             </html>
             """.encode('utf-8')
