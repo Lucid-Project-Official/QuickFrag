@@ -574,15 +574,32 @@ class QuitButton(discord.ui.Button):
         self.quit_triggered = False
 
     async def start_countdown(self, interaction: discord.Interaction, match_id, is_modifiabled):
-        if match_id not in countdown_flags:
-            countdown_flags[match_id] = {"done": False, "game_started": False}
+        # Éviter les countdowns multiples pour le même match
+        if match_id in countdown_flags:
+            if not countdown_flags[match_id].get("done", False) and not countdown_flags[match_id].get("game_started", False):
+                print(f"[WARNING] Countdown déjà en cours pour le match {match_id}, arrêt du nouveau")
+                return
+        
+        # Initialisation sécurisée des flags
+        countdown_flags[match_id] = {"done": False, "game_started": False}
+        print(f"[INFO] Countdown flags initialisés pour le match {match_id}")
         
         self.message = interaction.message
         while self.countdown > 0:
+            # Vérification de sécurité - si le match n'existe plus, on arrête
+            if match_id not in countdown_flags:
+                print(f"[WARNING] Match {match_id} supprimé du countdown_flags, arrêt du countdown")
+                return
+                
             if countdown_flags[match_id]["done"] or countdown_flags[match_id]["game_started"]:
                 break
             await asyncio.sleep(5)
             self.countdown -= 5
+
+        # Vérification de sécurité avant d'accéder aux flags
+        if match_id not in countdown_flags:
+            print(f"[WARNING] Match {match_id} n'existe plus dans countdown_flags")
+            return
 
         # Si la partie a été lancée, on arrête simplement le countdown sans annuler
         if countdown_flags[match_id]["game_started"]:
@@ -642,6 +659,7 @@ class QuitButton(discord.ui.Button):
         if is_modifiabled : 
             if match_id in countdown_flags:
                 del countdown_flags[match_id]
+                print(f"[INFO] Countdown flags nettoyés pour le match {match_id}")
         
         await channel.send(embed=embed, view=view)
 
@@ -1011,8 +1029,11 @@ async def on_interaction(interaction: discord.Interaction):
                     
                     # ARRÊTER LE COUNTDOWN D'ANNULATION SANS ANNULER LA PARTIE
                     if PlayedMatchID in countdown_flags:
-                        countdown_flags[PlayedMatchID]["game_started"] = True
-                        print(f"[INFO] Countdown d'annulation arrêté pour le match {PlayedMatchID} - partie lancée")
+                        try:
+                            countdown_flags[PlayedMatchID]["game_started"] = True
+                            print(f"[INFO] Countdown d'annulation arrêté pour le match {PlayedMatchID} - partie lancée")
+                        except KeyError:
+                            print(f"[WARNING] Impossible d'arrêter le countdown pour le match {PlayedMatchID} - flags manquants")
                     
                     # 1. MISE À JOUR DU STATUT DU MATCH
                     supabase.table("Matchs").update({"match_Status": 2}).eq("match_ID", PlayedMatchID).execute()
