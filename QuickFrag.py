@@ -329,8 +329,8 @@ async def create_connect_embed(match_id, guild):
     red_team_role = "T" if blue_team_is_ct else "CT"
     
     # Couleurs pour les rôles
-    blue_role_color = "🔵" if blue_team_is_ct else "🔴"  # Bleu pour CT, Rouge pour T
-    red_role_color = "🔴" if blue_team_is_ct else "🔵"  # Rouge pour CT, Bleu pour T
+    blue_role_color = "🔵" if blue_team_is_ct else "🟠"  # Bleu pour CT, Rouge pour T
+    red_role_color = "🟠" if blue_team_is_ct else "🔵"  # Rouge pour CT, Bleu pour T
 
     blue_emojie_value = "🔹" if blue_team_is_ct else "🔸"
     red_emojie_value = "🔸" if blue_team_is_ct else "🔹"
@@ -342,12 +342,12 @@ async def create_connect_embed(match_id, guild):
     )
 
     embed.add_field(
-        name=f"{blue_role_color} -- {blue_team_role} :", 
+        name=f"{blue_role_color}  {blue_team_role} :", 
         value=blue_emojie_value, 
         inline=True
     )
     embed.add_field(
-        name=f"{red_role_color} -- {red_team_role} :", 
+        name=f"{red_role_color}  {red_team_role} :", 
         value=red_emojie_value, 
         inline=True
     )
@@ -355,7 +355,7 @@ async def create_connect_embed(match_id, guild):
     
     # Affichage de la map
     embed.add_field(
-        name="MAP JOUÉE :",
+        name="MAP : ",
         value=f"**{map_name.upper()}**",
         inline=False
     )
