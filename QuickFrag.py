@@ -433,6 +433,33 @@ async def update_all_linked_messages_with_connect_button(match_id):
                 print(f"Erreur lors de la mise à jour du message: {e}")
                 continue
 
+async def update_all_linked_messages_with_cancellation(match_id, cancel_embed):
+    """Met à jour tous les messages liés avec le message d'annulation"""
+    # Récupération des messages liés pour les deux statuts possibles (1 ou 2)
+    linked_msgs_response = supabase.table("Matchs").select(
+        "Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, "
+        "Linked_Embbeded_MSG_4, Linked_Embbeded_MSG_5, Linked_Embbeded_MSG_6, "
+        "Linked_Embbeded_MSG_7, Linked_Embbeded_MSG_8, Linked_Embbeded_MSG_9, "
+        "Linked_Embbeded_MSG_10"
+    ).eq("match_ID", match_id).execute()
+    
+    result = linked_msgs_response.data[0] if linked_msgs_response.data else None
+    
+    if result:
+        data_listed = [data for data in result.values() if data]  # filtre les None
+        for data_dict in data_listed:
+            try:
+                dict_data = json.loads(data_dict)
+                channel = bot.get_channel(int(dict_data['channel_id']))
+                if channel:
+                    message = await channel.fetch_message(int(dict_data['message_id']))
+                    if message:
+                        await message.edit(embed=cancel_embed, view=None)
+                        print(f"[INFO] Message d'annulation mis à jour pour le channel {dict_data['channel_id']}")
+            except (json.JSONDecodeError, discord.NotFound, discord.Forbidden) as e:
+                print(f"Erreur lors de la mise à jour du message d'annulation: {e}")
+                continue
+
 async def update_server_countdown_real_time(match_id, ssh_command, start_time):
     """Met à jour le compte à rebours en temps réel pendant l'exécution de la commande SSH"""
     max_wait_time = 60
@@ -655,7 +682,7 @@ class QuitButton(discord.ui.Button):
             
             cancel_embed = discord.Embed(
                 title="⏱️ Partie annulée",
-                description="Aucun joueur n'a rejoint à temps.",
+                description="La partie n'a pas été lancée à temps.",
                 color=discord.Color.red()
             )
         
@@ -663,10 +690,8 @@ class QuitButton(discord.ui.Button):
         # Mise à jour du statut du match
         supabase.table("Matchs").update({"match_Status": 3}).eq("match_ID", match_id).execute()
         
-        try:
-            await self.message.edit(embed=cancel_embed, view=None)  
-        except (discord.NotFound, AttributeError):
-            print("Impossible d'annuler : le message a été supprimé.")
+        # Mettre à jour TOUS les messages liés avec le message d'annulation
+        await update_all_linked_messages_with_cancellation(match_id, cancel_embed)
 
         await asyncio.sleep(5)
         
