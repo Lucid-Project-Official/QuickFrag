@@ -433,6 +433,34 @@ async def update_all_linked_messages_with_connect_button(match_id):
                 print(f"Erreur lors de la mise à jour du message: {e}")
                 continue
 
+async def create_base_game_embed_and_view(channel, guild_id):
+    """Crée l'embed et la vue de base pour créer une partie selon la licence"""
+    # Récupération du type de licence
+    licence_response = supabase.table("Licence").select("type_licence").eq(
+        "Linked_discord_serverID", str(guild_id)
+    ).gt("duree_validite_heure", 0).execute()
+    
+    result = licence_response.data[0] if licence_response.data else None
+    
+    if result:
+        embed = discord.Embed(
+            title=f'Offre **{result["type_licence"]}** active, lancer une partie dès maintenant !',
+            description=f'Assurez-vous que tout les joueurs qui participeront sont dans le channel vocal : <#{channel.id}>',
+            color=discord.Color.green()
+        )
+        
+        # Déterminer la vue selon le type de licence
+        if result["type_licence"] in ["FREE", "BASIC"]:
+            view = StartFreeGameButton()
+        elif result["type_licence"] in ["EXPRESS", "PREMIUM"]:
+            view = StartGameButton()
+        else:
+            view = StartGameButton()  # Par défaut
+        
+        return embed, view
+    
+    return None, None
+
 async def update_all_linked_messages_with_cancellation(match_id, cancel_embed):
     """Met à jour tous les messages liés avec le message d'annulation"""
     # Récupération des messages liés pour les deux statuts possibles (1 ou 2)
@@ -458,6 +486,60 @@ async def update_all_linked_messages_with_cancellation(match_id, cancel_embed):
                         print(f"[INFO] Message d'annulation mis à jour pour le channel {dict_data['channel_id']}")
             except (json.JSONDecodeError, discord.NotFound, discord.Forbidden) as e:
                 print(f"Erreur lors de la mise à jour du message d'annulation: {e}")
+                continue
+
+async def restore_base_messages_in_all_channels(match_id):
+    """Restaure le message de base pour créer une partie dans tous les channels liés"""
+    # Récupération des messages liés
+    linked_msgs_response = supabase.table("Matchs").select(
+        "Linked_Embbeded_MSG_1, Linked_Embbeded_MSG_2, Linked_Embbeded_MSG_3, "
+        "Linked_Embbeded_MSG_4, Linked_Embbeded_MSG_5, Linked_Embbeded_MSG_6, "
+        "Linked_Embbeded_MSG_7, Linked_Embbeded_MSG_8, Linked_Embbeded_MSG_9, "
+        "Linked_Embbeded_MSG_10"
+    ).eq("match_ID", match_id).execute()
+    
+    result = linked_msgs_response.data[0] if linked_msgs_response.data else None
+    
+    if result:
+        processed_channels = set()  # Pour éviter les doublons
+        data_listed = [data for data in result.values() if data]  # filtre les None
+        
+        for data_dict in data_listed:
+            try:
+                dict_data = json.loads(data_dict)
+                channel_id = int(dict_data['channel_id'])
+                
+                # Éviter de traiter le même channel plusieurs fois
+                if channel_id in processed_channels:
+                    continue
+                processed_channels.add(channel_id)
+                
+                channel = bot.get_channel(channel_id)
+                if channel:
+                    # Créer l'embed et la vue selon la licence
+                    embed, view = await create_base_game_embed_and_view(channel, dict_data['guild_id'])
+                    
+                    if embed and view:
+                        try:
+                            # Purger le channel et envoyer le nouveau message
+                            await channel.purge(limit=None)
+                            await channel.send(embed=embed, view=view)
+                            print(f"[INFO] Message de base restauré dans le channel {channel_id}")
+                        except discord.Forbidden:
+                            print(f"[WARNING] Pas de permission pour purger le channel {channel_id}")
+                            # Essayer juste d'envoyer le message sans purger
+                            try:
+                                await channel.send(embed=embed, view=view)
+                                print(f"[INFO] Message de base envoyé dans le channel {channel_id} (sans purge)")
+                            except:
+                                print(f"[ERROR] Impossible d'envoyer le message dans le channel {channel_id}")
+                        except Exception as e:
+                            print(f"[ERROR] Erreur lors de la restauration dans le channel {channel_id}: {e}")
+                    else:
+                        print(f"[WARNING] Pas de licence valide trouvée pour la guild {dict_data['guild_id']}")
+                        
+            except (json.JSONDecodeError, ValueError) as e:
+                print(f"Erreur lors du traitement des données du message lié: {e}")
                 continue
 
 async def update_server_countdown_real_time(match_id, ssh_command, start_time):
@@ -695,42 +777,13 @@ class QuitButton(discord.ui.Button):
 
         await asyncio.sleep(5)
         
-        channel = interaction.message.channel
-
-        # Récupération du type de licence
-        licence_response = supabase.table("Licence").select("type_licence").eq(
-            "Linked_discord_serverID", str(interaction.guild.id)
-        ).gt("duree_validite_heure", 0).execute()
-        
-        result = licence_response.data[0] if licence_response.data else None
-            
-        if result :
-        
-            embed = discord.Embed(
-                title=f'Offre **{result["type_licence"]}** active, lancer une partie dès maintenant !',
-                description = f'Assurez-vous que tout les joueurs qui participeront sont dans le channel vocal : <#{channel.id}>',
-                color=discord.Color.green()
-            )
-        view = StartFreeGameButton()
-        if result["type_licence"] == "FREE" :
-            view = StartFreeGameButton()
-        if result["type_licence"] == "BASIC" :
-            view = StartFreeGameButton()
-        if result["type_licence"] == "EXPRESS" :
-            view = StartGameButton()
-        if result["type_licence"] == "PREMIUM" :
-            view = StartGameButton()
-            
-        view = StartGameButton()
-        
-        await channel.purge(limit=None)
+        # Restaurer le message de base dans TOUS les channels liés
+        await restore_base_messages_in_all_channels(match_id)
         
         if is_modifiabled : 
             if match_id in countdown_flags:
                 del countdown_flags[match_id]
                 print(f"[INFO] Countdown flags nettoyés pour le match {match_id}")
-        
-        await channel.send(embed=embed, view=view)
 
         
     async def callback(self, interaction: discord.Interaction):
