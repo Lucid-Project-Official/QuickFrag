@@ -311,14 +311,51 @@ async def create_connect_embed(match_id, guild):
     if response.data and len(response.data) > 0:
         CreatorName = response.data[0]["match_CreatorName"]
     
+    # Récupération des informations du serveur (map et rôles CT/T)
+    server_response = supabase.table("ServersManager").select(
+        "server_Map, blue_team_is_ct"
+    ).eq("match_ID", match_id).eq("server_State", 2).execute()
+    
+    map_name = "de_dust2"  # Par défaut
+    blue_team_is_ct = True  # Par défaut
+    
+    if server_response.data:
+        server_data = server_response.data[0]
+        map_name = server_data.get("server_Map", "de_dust2")
+        blue_team_is_ct = server_data.get("blue_team_is_ct", True)
+    
+    # Déterminer les rôles des équipes
+    blue_team_role = "CT" if blue_team_is_ct else "T"
+    red_team_role = "T" if blue_team_is_ct else "CT"
+    
+    # Couleurs pour les rôles
+    blue_role_color = "🔵" if blue_team_is_ct else "🔴"  # Bleu pour CT, Rouge pour T
+    red_role_color = "🔴" if not blue_team_is_ct else "🔵"  # Rouge pour CT, Bleu pour T
+    
     embed = discord.Embed(
         title="🎮 SERVEUR PRÊT - CONNECTEZ-VOUS !",
         description=f"**{CreatorName}** est le créateur de la partie !\nLe serveur est maintenant disponible, connectez-vous !",
         color=discord.Color.green()
     )
 
-    embed.add_field(name="EQUIPE BLEU :", value="🔹", inline=True)
-    embed.add_field(name="EQUIPE ROUGE :", value="🔸", inline=True)
+    embed.add_field(
+        name=f"EQUIPE BLEU ({blue_role_color} {blue_team_role}) :", 
+        value="🔹", 
+        inline=True
+    )
+    embed.add_field(
+        name=f"EQUIPE ROUGE ({red_role_color} {red_team_role}) :", 
+        value="🔸", 
+        inline=True
+    )
+    embed.add_field(name="\u200b", value="\u200b", inline=True)  # Champ vide pour la mise en page
+    
+    # Affichage de la map
+    embed.add_field(
+        name="🗺️ MAP DE JEU",
+        value=f"**{map_name.upper()}**",
+        inline=False
+    )
 
     embed.set_thumbnail(url="https://seek-team-prod.s3.fr-par.scw.cloud/users/67c758968e61a685175513.jpg")
 
@@ -378,8 +415,16 @@ async def create_connect_embed(match_id, guild):
                 player_emoji = get_player_rank_emoji(player_id)
                 red_team_with_emoji.append(f"{player_name} {player_emoji}")
 
-        embed.set_field_at(0, name="EQUIPE BLEU :", value="🔹 " + '\n🔹 '.join(blue_team_with_emoji) if blue_team_with_emoji else "🔹", inline=True)
-        embed.set_field_at(1, name="EQUIPE ROUGE :", value="🔸 " + '\n🔸 '.join(red_team_with_emoji) if red_team_with_emoji else "🔸", inline=True)
+        embed.set_field_at(0, 
+            name=f"EQUIPE BLEU ({blue_role_color} {blue_team_role}) :", 
+            value="🔹 " + '\n🔹 '.join(blue_team_with_emoji) if blue_team_with_emoji else "🔹", 
+            inline=True
+        )
+        embed.set_field_at(1, 
+            name=f"EQUIPE ROUGE ({red_role_color} {red_team_role}) :", 
+            value="🔸 " + '\n🔸 '.join(red_team_with_emoji) if red_team_with_emoji else "🔸", 
+            inline=True
+        )
 
     return embed
 
@@ -1163,6 +1208,10 @@ async def on_interaction(interaction: discord.Interaction):
                     # 2. RÉCUPÉRATION ET MISE À JOUR DES STEAMIDS AVANT LE REDÉMARRAGE
                     print(f"[INFO] Préparation de la whitelist pour le match {PlayedMatchID}")
                     
+                    # Déterminer aléatoirement qui est CT/T
+                    blue_team_is_ct = random.choice([True, False])
+                    print(f"[INFO] Assignation des rôles - Équipe Bleue: {'CT' if blue_team_is_ct else 'T'}, Équipe Rouge: {'T' if blue_team_is_ct else 'CT'}")
+                    
                     # Récupération des Discord_PlayerID des joueurs du match
                     match_players_response = supabase.table("Matchs").select(
                         "match_PlayerID_1, match_PlayerID_2, match_PlayerID_3, "
@@ -1179,11 +1228,14 @@ async def on_interaction(interaction: discord.Interaction):
                     if match_players_response.data:
                         match_data = match_players_response.data[0]
                         
-                        # Pour chaque joueur, récupérer son SteamID depuis la table Players
-                        for i in range(1, 11):
+                        # Collecter les SteamIDs des équipes
+                        blue_team_steam_ids = []  # Joueurs 1-5 (équipe bleue)
+                        red_team_steam_ids = []   # Joueurs 6-10 (équipe rouge)
+                        
+                        # Récupérer les SteamIDs de l'équipe bleue (joueurs 1-5)
+                        for i in range(1, 6):
                             discord_player_id = match_data.get(f"match_PlayerID_{i}")
                             if discord_player_id:
-                                # Récupération du SteamID depuis la table Players
                                 player_steam_response = supabase.table("Players").select(
                                     "Steam_PlayerID"
                                 ).eq("Discord_PlayerID", str(discord_player_id)).execute()
@@ -1191,29 +1243,49 @@ async def on_interaction(interaction: discord.Interaction):
                                 if player_steam_response.data:
                                     steam_id = player_steam_response.data[0]["Steam_PlayerID"]
                                     if steam_id is not None:
-                                        # Convertir en chaîne et nettoyer
                                         steam_id_str = str(steam_id).strip()
                                         if steam_id_str and steam_id_str != "None":
-                                            steam_ids_data[f"match_playersteam_{i}"] = steam_id_str
-                                            print(f"[DEBUG] Joueur {i} - Discord ID: {discord_player_id} -> Steam ID: {steam_id_str}")
-                                        else:
-                                            print(f"[WARNING] SteamID vide pour Discord ID: {discord_player_id}")
-                                            steam_ids_data[f"match_playersteam_{i}"] = ""
-                                    else:
-                                        print(f"[WARNING] SteamID null pour Discord ID: {discord_player_id}")
-                                        steam_ids_data[f"match_playersteam_{i}"] = ""
-                                else:
-                                    print(f"[WARNING] Aucun SteamID trouvé pour Discord ID: {discord_player_id}")
-                                    steam_ids_data[f"match_playersteam_{i}"] = ""
-                            else:
-                                print(f"[DEBUG] Slot {i} vide - pas de joueur")
-                                steam_ids_data[f"match_playersteam_{i}"] = ""
+                                            blue_team_steam_ids.append(steam_id_str)
+                                            print(f"[DEBUG] Équipe Bleue - Joueur {i} - Discord ID: {discord_player_id} -> Steam ID: {steam_id_str}")
+                        
+                        # Récupérer les SteamIDs de l'équipe rouge (joueurs 6-10)
+                        for i in range(6, 11):
+                            discord_player_id = match_data.get(f"match_PlayerID_{i}")
+                            if discord_player_id:
+                                player_steam_response = supabase.table("Players").select(
+                                    "Steam_PlayerID"
+                                ).eq("Discord_PlayerID", str(discord_player_id)).execute()
+                                
+                                if player_steam_response.data:
+                                    steam_id = player_steam_response.data[0]["Steam_PlayerID"]
+                                    if steam_id is not None:
+                                        steam_id_str = str(steam_id).strip()
+                                        if steam_id_str and steam_id_str != "None":
+                                            red_team_steam_ids.append(steam_id_str)
+                                            print(f"[DEBUG] Équipe Rouge - Joueur {i} - Discord ID: {discord_player_id} -> Steam ID: {steam_id_str}")
+                        
+                        # Assigner les SteamIDs selon les rôles CT/T
+                        if blue_team_is_ct:
+                            # Équipe Bleue = CT (colonnes 1-5), Équipe Rouge = T (colonnes 6-10)
+                            for idx, steam_id in enumerate(blue_team_steam_ids, 1):
+                                steam_ids_data[f"match_playersteam_{idx}"] = steam_id
+                            for idx, steam_id in enumerate(red_team_steam_ids, 6):
+                                steam_ids_data[f"match_playersteam_{idx}"] = steam_id
+                            print(f"[INFO] Assignation CT/T - Équipe Bleue (CT): colonnes 1-5, Équipe Rouge (T): colonnes 6-10")
+                        else:
+                            # Équipe Bleue = T (colonnes 6-10), Équipe Rouge = CT (colonnes 1-5)
+                            for idx, steam_id in enumerate(red_team_steam_ids, 1):
+                                steam_ids_data[f"match_playersteam_{idx}"] = steam_id
+                            for idx, steam_id in enumerate(blue_team_steam_ids, 6):
+                                steam_ids_data[f"match_playersteam_{idx}"] = steam_id
+                            print(f"[INFO] Assignation CT/T - Équipe Rouge (CT): colonnes 1-5, Équipe Bleue (T): colonnes 6-10")
                     
                     # Mise à jour du serveur avec les SteamIDs AVANT le redémarrage
                     server_update_data = {
                         "match_ID": PlayedMatchID,
                         "server_State": 2,
-                        "server_Map": map_choiced
+                        "server_Map": map_choiced,
+                        "blue_team_is_ct": blue_team_is_ct  # Stocker l'info des rôles pour l'affichage
                     }
                     
                     # Ajouter les SteamIDs récupérés
