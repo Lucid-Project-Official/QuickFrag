@@ -585,7 +585,12 @@ class QuitButton(discord.ui.Button):
         print(f"[INFO] Countdown flags initialisés pour le match {match_id}")
         
         self.message = interaction.message
-        while self.countdown > 0:
+        
+        # PHASE 1 : Attendre le lancement de la partie (2 minutes)
+        phase1_countdown = 120  # 2 minutes
+        print(f"[INFO] Phase 1 : Attente du lancement de la partie (2 minutes) pour le match {match_id}")
+        
+        while phase1_countdown > 0:
             # Vérification de sécurité - si le match n'existe plus, on arrête
             if match_id not in countdown_flags:
                 print(f"[WARNING] Match {match_id} supprimé du countdown_flags, arrêt du countdown")
@@ -594,31 +599,70 @@ class QuitButton(discord.ui.Button):
             if countdown_flags[match_id]["done"] or countdown_flags[match_id]["game_started"]:
                 break
             await asyncio.sleep(5)
-            self.countdown -= 5
+            phase1_countdown -= 5
 
         # Vérification de sécurité avant d'accéder aux flags
         if match_id not in countdown_flags:
             print(f"[WARNING] Match {match_id} n'existe plus dans countdown_flags")
             return
 
-        # Si la partie a été lancée, on arrête simplement le countdown sans annuler
+        # Si la partie a été lancée, passer à la phase 2
         if countdown_flags[match_id]["game_started"]:
-            print(f"[INFO] Countdown arrêté - partie lancée pour le match {match_id}")
-            if match_id in countdown_flags:
-                del countdown_flags[match_id]
-            return
-
-        if self.countdown <= 0:
-            countdown_flags[match_id]["done"] = True
+            print(f"[INFO] Phase 1 terminée - partie lancée pour le match {match_id}, passage à la phase 2")
             
+            # PHASE 2 : Attendre que le serveur soit prêt (1 minute 30)
+            phase2_countdown = 90  # 1 minute 30 secondes
+            print(f"[INFO] Phase 2 : Attente de la disponibilité du serveur (1 minute 30) pour le match {match_id}")
+            
+            while phase2_countdown > 0:
+                # Vérification de sécurité - si le match n'existe plus, on arrête
+                if match_id not in countdown_flags:
+                    print(f"[WARNING] Match {match_id} supprimé du countdown_flags, arrêt du countdown phase 2")
+                    return
+                
+                # Vérifier si server_State est passé à 3
+                try:
+                    server_response = supabase.table("ServersManager").select(
+                        "server_State"
+                    ).eq("match_ID", match_id).execute()
+                    
+                    if server_response.data:
+                        server_state = server_response.data[0].get("server_State")
+                        if server_state == 3:
+                            print(f"[INFO] Phase 2 terminée - serveur prêt (server_State = 3) pour le match {match_id}")
+                            if match_id in countdown_flags:
+                                del countdown_flags[match_id]
+                            return
+                    
+                except Exception as e:
+                    print(f"[ERROR] Erreur lors de la vérification du server_State pour le match {match_id}: {e}")
+                
+                await asyncio.sleep(5)
+                phase2_countdown -= 5
+            
+            # Si on arrive ici, c'est que tous les joueurs n'ont pas rejoint le serveur à temps
+            print(f"[WARNING] Phase 2 timeout - tous les joueurs n'ont pas rejoint le serveur à temps pour le match {match_id}")
+            cancel_embed = discord.Embed(
+                title="⏱️ Partie annulée",
+                description="Tous les joueurs n'ont pas rejoint le serveur de jeu à temps.",
+                color=discord.Color.red()
+            )
+        else:
+            # Phase 1 timeout - la partie n'a pas été lancée à temps
+            print(f"[WARNING] Phase 1 timeout - partie non lancée à temps pour le match {match_id}")
+            if phase1_countdown <= 0:
+                countdown_flags[match_id]["done"] = True
+            
+            cancel_embed = discord.Embed(
+                title="⏱️ Partie annulée",
+                description="Aucun joueur n'a rejoint à temps.",
+                color=discord.Color.red()
+            )
+        
+        # Annulation de la partie (commun aux deux cas d'échec)
         # Mise à jour du statut du match
         supabase.table("Matchs").update({"match_Status": 3}).eq("match_ID", match_id).execute()
         
-        cancel_embed = discord.Embed(
-            title="⏱️ Partie annulée",
-            description="Aucun joueur n'a rejoint à temps.",
-            color=discord.Color.red()
-        )
         try:
             await self.message.edit(embed=cancel_embed, view=None)  
         except (discord.NotFound, AttributeError):
