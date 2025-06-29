@@ -342,12 +342,12 @@ async def create_connect_embed(match_id, guild):
     )
 
     embed.add_field(
-        name=f"{blue_role_color} {blue_team_role} :", 
+        name=f"{blue_role_color} -- {blue_team_role} :", 
         value=blue_emojie_value, 
         inline=True
     )
     embed.add_field(
-        name=f"{red_role_color} {red_team_role} :", 
+        name=f"{red_role_color} -- {red_team_role} :", 
         value=red_emojie_value, 
         inline=True
     )
@@ -355,7 +355,7 @@ async def create_connect_embed(match_id, guild):
     
     # Affichage de la map
     embed.add_field(
-        name="🗺️ MAP DE JEU",
+        name="MAP JOUÉE :",
         value=f"**{map_name.upper()}**",
         inline=False
     )
@@ -544,7 +544,8 @@ async def update_all_linked_messages_with_cancellation(match_id, cancel_embed):
                 if channel:
                     message = await channel.fetch_message(int(dict_data['message_id']))
                     if message:
-                        await message.edit(embed=cancel_embed, view=None)
+                        # Supprimer les attachments (images) et mettre à jour avec le message d'annulation
+                        await message.edit(embed=cancel_embed, view=None, attachments=[])
                         print(f"[INFO] Message d'annulation mis à jour pour le channel {dict_data['channel_id']}")
             except (json.JSONDecodeError, discord.NotFound, discord.Forbidden) as e:
                 print(f"Erreur lors de la mise à jour du message d'annulation: {e}")
