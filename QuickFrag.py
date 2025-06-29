@@ -330,7 +330,10 @@ async def create_connect_embed(match_id, guild):
     
     # Couleurs pour les rôles
     blue_role_color = "🔵" if blue_team_is_ct else "🔴"  # Bleu pour CT, Rouge pour T
-    red_role_color = "🔴" if not blue_team_is_ct else "🔵"  # Rouge pour CT, Bleu pour T
+    red_role_color = "🔴" if blue_team_is_ct else "🔵"  # Rouge pour CT, Bleu pour T
+
+    blue_emojie_value = "🔹" if blue_team_is_ct else "🔸"
+    red_emojie_value = "🔸" if blue_team_is_ct else "🔹"
     
     embed = discord.Embed(
         title="🎮 SERVEUR PRÊT - CONNECTEZ-VOUS !",
@@ -339,13 +342,13 @@ async def create_connect_embed(match_id, guild):
     )
 
     embed.add_field(
-        name=f"EQUIPE BLEU ({blue_role_color} {blue_team_role}) :", 
-        value="🔹", 
+        name=f"{blue_role_color} {blue_team_role} :", 
+        value=blue_emojie_value, 
         inline=True
     )
     embed.add_field(
-        name=f"EQUIPE ROUGE ({red_role_color} {red_team_role}) :", 
-        value="🔸", 
+        name=f"{red_role_color} {red_team_role} :", 
+        value=red_emojie_value, 
         inline=True
     )
     embed.add_field(name="\u200b", value="\u200b", inline=True)  # Champ vide pour la mise en page
@@ -356,8 +359,6 @@ async def create_connect_embed(match_id, guild):
         value=f"**{map_name.upper()}**",
         inline=False
     )
-
-    embed.set_thumbnail(url="https://seek-team-prod.s3.fr-par.scw.cloud/users/67c758968e61a685175513.jpg")
 
     # Récupération des noms et IDs des joueurs
     players_response = supabase.table("Matchs").select(
@@ -416,17 +417,30 @@ async def create_connect_embed(match_id, guild):
                 red_team_with_emoji.append(f"{player_name} {player_emoji}")
 
         embed.set_field_at(0, 
-            name=f"EQUIPE BLEU ({blue_role_color} {blue_team_role}) :", 
-            value="🔹 " + '\n🔹 '.join(blue_team_with_emoji) if blue_team_with_emoji else "🔹", 
+            name=f"{blue_role_color} {blue_team_role} :", 
+            value=f"{blue_emojie_value} " + f'\n{blue_emojie_value} '.join(blue_team_with_emoji) if blue_team_with_emoji else blue_emojie_value, 
             inline=True
         )
         embed.set_field_at(1, 
-            name=f"EQUIPE ROUGE ({red_role_color} {red_team_role}) :", 
-            value="🔸 " + '\n🔸 '.join(red_team_with_emoji) if red_team_with_emoji else "🔸", 
+            name=f"{red_role_color} {red_team_role} :", 
+            value=f"{red_emojie_value} " + f'\n{red_emojie_value} '.join(red_team_with_emoji) if red_team_with_emoji else red_emojie_value, 
             inline=True
         )
 
-    return embed
+    # Chemin de l'image de la map
+    map_image_path = f"/home/ubuntu/Gallerie/{map_name}.jpg"
+    
+    # Vérifier si l'image existe, sinon utiliser une image par défaut
+    if os.path.exists(map_image_path):
+        # Utiliser l'image de la map comme thumbnail via attachment
+        embed.set_thumbnail(url=f"attachment://{map_name}.jpg")
+        map_file = discord.File(map_image_path, filename=f"{map_name}.jpg")
+        return embed, map_file
+    else:
+        # Utiliser l'image par défaut si l'image de la map n'existe pas
+        embed.set_thumbnail(url="https://seek-team-prod.s3.fr-par.scw.cloud/users/67c758968e61a685175513.jpg")
+        print(f"[WARNING] Image de map non trouvée: {map_image_path}")
+        return embed, None
 
 async def update_all_linked_messages_with_connect_button(match_id):
     """Met à jour tous les messages liés avec le bouton Se connecter"""
@@ -466,14 +480,17 @@ async def update_all_linked_messages_with_connect_button(match_id):
                     message = await channel.fetch_message(int(dict_data['message_id']))
                     if message:
                         # Créer le nouvel embed avec les emojis SilverOne (en utilisant le guild du channel)
-                        connect_embed = await create_connect_embed(match_id, channel.guild)
+                        connect_embed, map_file = await create_connect_embed(match_id, channel.guild)
                         
                         # Créer la vue avec le bouton Se connecter (avec l'IP du serveur)
                         quit_button = QuitButton()
                         connect_view = ConnectServerViewButtons(quit_button, server_ip)
                         
-                        # Utiliser le nouvel embed avec les emojis SilverOne
-                        await message.edit(embed=connect_embed, view=connect_view)
+                        # Mettre à jour le message avec l'embed et l'image de la map (si disponible)
+                        if map_file:
+                            await message.edit(embed=connect_embed, view=connect_view, attachments=[map_file])
+                        else:
+                            await message.edit(embed=connect_embed, view=connect_view)
             except (json.JSONDecodeError, discord.NotFound, discord.Forbidden) as e:
                 print(f"Erreur lors de la mise à jour du message: {e}")
                 continue
